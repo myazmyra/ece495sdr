@@ -19,12 +19,12 @@
 
 class USRP_tx {
  public:
-  
+
     USRP_tx();
     ~USRP_tx();
      int transmit(std::vector< std::complex<float> > buff);
-     unsigned int get_spb();
-    
+     size_t get_spb();
+
  private:
 
      const std::string args;// = "serial=901"; //single uhd device address args (example: "addr=192.168.10.2", "serial=901", "type=usrp2")
@@ -34,12 +34,12 @@ class USRP_tx {
      const double rate;// = 12.5e6; //sample rate (frequency) between the PC and Motherboard
      const size_t spb;// = 9075; //samples per buffer; has to satisfy -> spb = k * Fs/Fc * usrp->get_max_num_samps(); for some integer k; here k = 8
      const double f_c;// = 4e6; //carrier frequency
-    
+
     uhd::usrp::multi_usrp::sptr usrp_tx; //usrp device
     uhd::tx_streamer::sptr tx_stream; //streamer object
     std::vector<std::string> sensor_names; //sensor names to be used when checking for clock locking etc.
     uhd::tx_metadata_t md; //metadata for the streamer object
-    
+
 };
 
 #endif

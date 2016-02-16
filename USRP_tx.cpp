@@ -7,11 +7,11 @@ static bool stop_signal_called = false;
 void sig_int_handler(int){stop_signal_called = true;}
 
 USRP_tx::USRP_tx() : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("sc16"),
-		     rate(12.5e6), spb(9075), f_c(4e6) { //initialize the constants
+										 rate(12.5e6), spb(9075), f_c(4e6) { //initialize the constants
 
     //give thread priority to usrp
     uhd::set_thread_priority_safe();
-    
+
     //create a usrp device
     std::cout << std::endl;
     std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
@@ -34,7 +34,7 @@ USRP_tx::USRP_tx() : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("s
     //first time transmitting
     md.start_of_burst = true;
     md.end_of_burst = false;
-    
+
     //set timestamp to ZERO
     std::cout << boost::format("Setting device timestamp to 0...") << std::endl << std::endl;
     usrp->set_time_now(0.0);
@@ -57,8 +57,8 @@ USRP_tx::~USRP_tx() {
     //last time transmitting
     //send a mini EOB packet
     if(md.end_of_burst == false) {
-	md.end_of_burst = true;
-	tx_stream->send("", 0, md);
+			md.end_of_burst = true;
+			tx_stream->send("", 0, md);
     }
 
     //finished
@@ -67,14 +67,14 @@ USRP_tx::~USRP_tx() {
 
 int USRP_tx::transmit(std::vector< std::complex<float> > buff) {
     if(not stop_signal_called) {
-	//send the entire buffer
-	tx_stream->send(&buff.front(), buff.size(), md);
-	md.start_of_burst = false;
+			//send the entire buffer
+			tx_stream->send(&buff.front(), buff.size(), md);
+			md.start_of_burst = false;
     }
     return 1;
 }
 
-unsigned int USRP_tx::get_spb() {
+size_t USRP_tx::get_spb() {
     return spb;
 }
 
