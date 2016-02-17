@@ -7,7 +7,7 @@ static bool stop_signal_called = false;
 void sig_int_handler(int){stop_signal_called = true;}
 
 USRP_tx::USRP_tx() : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("sc16"),
-										 rate(12.5e6), spb(9075), f_c(4e6) { //initialize the constants
+		     rate(12.5e6), spb(9075), f_c(4e6) { //initialize the constants
 
     //give thread priority to usrp
     uhd::set_thread_priority_safe();
@@ -32,7 +32,7 @@ USRP_tx::USRP_tx() : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("s
     uhd::stream_args_t stream_args(cpufmt, otw); //stream arguments
     tx_stream = usrp->get_tx_stream(stream_args);
     //first time transmitting
-    md.start_of_burst = true;
+    md.start_of_burst = false;
     md.end_of_burst = false;
 
     //set timestamp to ZERO
@@ -54,33 +54,45 @@ USRP_tx::USRP_tx() : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("s
 }
 
 USRP_tx::~USRP_tx() {
-    //last time transmitting
-    //send a mini EOB packet
-    if(md.end_of_burst == false) {
-			md.end_of_burst = true;
-			tx_stream->send("", 0, md);
-    }
-
     //finished
-    std::cout << "Done!" << std::endl << std::endl;
+    std::cout << "Destroying the USRP_tx object." << std::endl << std::endl;
 }
 
 int USRP_tx::transmit(std::vector< std::complex<float> > buff) {
-    if(not stop_signal_called) {
-			//send the entire buffer
-			tx_stream->send(&buff.front(), buff.size(), md);
-			md.start_of_burst = false;
-    }
-    return 1;
+	if(md.end_of_burst == true) {
+		throw std::exception("invalid attempt to transmit after md.end_of_burst is set to true");
+	} else if(md.start_of_burst == true) {
+		throw std::exception("invalid attempt to transmit start burst");
+	}
+  	if(not stop_signal_called) {
+		//send the entire buffer
+		tx_stream->send(&buff.front(), buff.size(), md);
+	}
+  	return 1;
+}
+
+void USRP_tx::send_start_of_burst() {
+	if(md.start_of_burst == true) {
+		throw std::exception("md.start_of_burst is already set to true");
+	}
+	md.start_of_burst = true;
+	if(not stop signal called) {
+		std::vector< std::complex<float> > buff(spb);
+		tx_stream->send(&buff.front, buff.size(), md);
+	}
+	md.start_of_burst = false;
+}
+
+void USRP_tx::send_end_of_burst() {
+	if(md.end_of_burst == true) {
+		throw std::exception("md.end_of_burst is already set to true");
+	}
+	//last time transmitting
+	//send a mini EOB packet
+	md.end_of_burst = true;
+	tx_stream->send("", 0, md);
 }
 
 size_t USRP_tx::get_spb() {
     return spb;
-}
-
-int UHD_SAFE_MAIN(int argc, char *argv[]) {
-    USRP_tx* controller = new USRP_tx();
-    std::vector< std::complex<float> > buff(controller->get_spb());
-    controller->transmit(buff);
-    return EXIT_SUCCESS;
 }
