@@ -21,7 +21,6 @@ class USRP_tx {
     int transmit(std::vector< std::complex<float> > buff);
     void send_start_of_burst();
     void send_end_of_burst();
-    size_t get_spb();
 
  private:
 

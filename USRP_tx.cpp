@@ -9,9 +9,6 @@ void sig_int_handler(int){stop_signal_called = true;}
 USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("sc16"),
 		     											sample_rate(sample_rate), spb(spb) { //initialize the constants
 
-    //give thread priority to usrp
-    uhd::set_thread_priority_safe();
-
     //create a usrp device
     std::cout << std::endl;
     std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
@@ -51,7 +48,6 @@ USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"
     //makes it possible to stop the program by pressing Ctrl+C
     std::signal(SIGINT, &sig_int_handler);
     std::cout << "Press Ctrl + C to stop streaming..." << std::endl << std::endl;
-
 }
 
 USRP_tx::~USRP_tx() {
