@@ -6,39 +6,39 @@ USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"
 	//give thread priority to this thread
 	uhd::set_thread_priority_safe();
 
-    //create a usrp device
+    //create a usrp_tx device
     std::cout << std::endl;
     std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
-    uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+    usrp_tx = uhd::usrp::multi_usrp::make(args);
 
     //Lock mboard clocks
-    usrp->set_clock_source(ref);
+    usrp_tx->set_clock_source(ref);
 
     //set the sample_rate
     std::cout << std::endl << boost::format("Setting TX Rate: %f Msps...") % (sample_rate/1e6) << std::endl;
-    usrp->set_tx_rate(sample_rate);
-    std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp->get_tx_rate()/1e6) << std::endl << std::endl;
+    usrp_tx->set_tx_rate(sample_rate);
+    std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp_tx->get_tx_rate()/1e6) << std::endl << std::endl;
 
     //allow for some setup time
     boost::this_thread::sleep(boost::posix_time::seconds(1));
 
-    //create a transmit streamer
-    tx_stream = usrp->get_tx_stream(stream_args);
-	//initialize metadata
-    md.start_of_burst = false;
-    md.end_of_burst = false;
-
     //set timestamp to ZERO
     std::cout << boost::format("Setting device timestamp to 0...") << std::endl << std::endl;
-    usrp->set_time_now(0.0);
+    usrp_tx->set_time_now(0.0);
 
     //Check Ref and LO Lock detect
-    sensor_names = usrp->get_tx_sensor_names(0);
+    sensor_names = usrp_tx->get_tx_sensor_names(0);
     if (std::find(sensor_names.begin(), sensor_names.end(), "lo_locked") != sensor_names.end()) {
-        uhd::sensor_value_t lo_locked = usrp->get_tx_sensor("lo_locked",0);
+        uhd::sensor_value_t lo_locked = usrp_tx->get_tx_sensor("lo_locked",0);
         std::cout << boost::format("Checking TX: %s ...") % lo_locked.to_pp_string() << std::endl << std::endl;
         UHD_ASSERT_THROW(lo_locked.to_bool());
     }
+
+	//create a transmit streamer
+    tx_stream = usrp_tx->get_tx_stream(stream_args);
+	//initialize metadata
+    md.start_of_burst = false;
+    md.end_of_burst = false;
 }
 
 USRP_tx::~USRP_tx() {

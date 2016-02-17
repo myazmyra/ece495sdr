@@ -5,7 +5,7 @@ class BPSK_tx {
   public:
 
     BPSK_tx();
-    ~BPSK_tx();
+    virtual ~BPSK_tx();
     double get_sample_rate();
     double get_f_c();
     size_t get_spb();
