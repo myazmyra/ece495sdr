@@ -6,8 +6,8 @@
 static bool stop_signal_called = false;
 void sig_int_handler(int){stop_signal_called = true;}
 
-USRP_tx::USRP_tx() : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("sc16"),
-		     rate(12.5e6), spb(9075), f_c(4e6) { //initialize the constants
+USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("sc16"),
+		     											sample_rate(sample_rate), spb(spb) { //initialize the constants
 
     //give thread priority to usrp
     uhd::set_thread_priority_safe();
@@ -20,9 +20,9 @@ USRP_tx::USRP_tx() : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("s
     //Lock mboard clocks
     usrp->set_clock_source(ref);
 
-    //set the sample rate
-    std::cout << std::endl << boost::format("Setting TX Rate: %f Msps...") % (rate/1e6) << std::endl;
-    usrp->set_tx_rate(rate);
+    //set the sample_rate
+    std::cout << std::endl << boost::format("Setting TX Rate: %f Msps...") % (sample_rate/1e6) << std::endl;
+    usrp->set_tx_rate(sample_rate);
     std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp->get_tx_rate()/1e6) << std::endl << std::endl;
 
     //allow for some setup time
@@ -56,7 +56,7 @@ USRP_tx::USRP_tx() : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("s
 
 USRP_tx::~USRP_tx() {
     //finished
-    std::cout << "Destroying the USRP_tx object." << std::endl << std::endl;
+    std::cout << "Destroying the USRP_tx object..." << std::endl << std::endl;
 }
 
 int USRP_tx::transmit(std::vector< std::complex<float> > buff) {
@@ -92,8 +92,4 @@ void USRP_tx::send_end_of_burst() {
 	//send a mini EOB packet
 	md.end_of_burst = true;
 	tx_stream->send("", 0, md);
-}
-
-size_t USRP_tx::get_spb() {
-    return spb;
 }

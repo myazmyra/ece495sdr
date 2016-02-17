@@ -16,7 +16,7 @@
 class USRP_tx {
  public:
 
-    USRP_tx();
+    USRP_tx(double sample_rate, double f_c, size_t spb);
     ~USRP_tx();
     int transmit(std::vector< std::complex<float> > buff);
     void send_start_of_burst();
@@ -29,9 +29,8 @@ class USRP_tx {
     const std::string ref;// = "internal"; //clock reference (internal, external, mimo, gpsdo)
     const std::string cpufmt;// = "fc32"; //cpu sample format
     const std::string otw;// = "sc16"; //specify over the wire sample mode
-    const double rate;// = 12.5e6; //sample rate (frequency) between the PC and Motherboard
+    const double sample_rate;// = 12.5e6; //sample_rate between the PC and Motherboard
     const size_t spb;// = 9075; //samples per buffer; has to satisfy -> spb = k * Fs/Fc * usrp->get_max_num_samps(); for some integer k; here k = 8
-    const double f_c;// = 4e6; //carrier frequency
 
     uhd::usrp::multi_usrp::sptr usrp_tx; //usrp device
     uhd::tx_streamer::sptr tx_stream; //streamer object
