@@ -1,13 +1,10 @@
 #include "USRP_tx.h"
 
-/***********************************************************************
- * Signal handlers
- **********************************************************************/
-static bool stop_signal_called = false;
-void sig_int_handler(int){stop_signal_called = true;}
-
 USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("sc16"),
 		     											sample_rate(sample_rate), spb(spb) { //initialize the constants
+
+	//give thread priority to this thread
+	uhd::set_thread_priority_safe();
 
     //create a usrp device
     std::cout << std::endl;
@@ -29,13 +26,15 @@ USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"
     uhd::stream_args_t stream_args(cpufmt, otw); //stream arguments
     tx_stream = usrp->get_tx_stream(stream_args);
 
-	//initialize metadata
-    md.start_of_burst = false;
-    md.end_of_burst = false;
+
 
     //set timestamp to ZERO
     std::cout << boost::format("Setting device timestamp to 0...") << std::endl << std::endl;
     usrp->set_time_now(0.0);
+
+	//initialize metadata
+    md.start_of_burst = false;
+    md.end_of_burst = false;
 
     //Check Ref and LO Lock detect
     sensor_names = usrp->get_tx_sensor_names(0);
@@ -44,10 +43,6 @@ USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"
         std::cout << boost::format("Checking TX: %s ...") % lo_locked.to_pp_string() << std::endl << std::endl;
         UHD_ASSERT_THROW(lo_locked.to_bool());
     }
-
-    //makes it possible to stop the program by pressing Ctrl+C
-    std::signal(SIGINT, &sig_int_handler);
-    std::cout << "Press Ctrl + C to stop streaming..." << std::endl << std::endl;
 }
 
 USRP_tx::~USRP_tx() {
@@ -57,31 +52,31 @@ USRP_tx::~USRP_tx() {
 
 int USRP_tx::transmit(std::vector< std::complex<float> > buff) {
 	if(md.end_of_burst == true) {
+		std::cout << "runtime_error: invalid attempt to transmit after md.end_of_burst is set to true" << std::endl;
 		throw new std::runtime_error("invalid attempt to transmit after md.end_of_burst is set to true");
 	} else if(md.start_of_burst == true) {
+		std::cout << "runtime_error: invalid attempt to transmit start burst" << std::endl;
 		throw new std::runtime_error("invalid attempt to transmit start burst");
 	}
-  	if(not stop_signal_called) {
-		//send the entire buffer
-		tx_stream->send(&buff.front(), buff.size(), md);
-	}
+	//send the entire buffer
+	tx_stream->send(&buff.front(), buff.size(), md);
   	return 1;
 }
 
 void USRP_tx::send_start_of_burst() {
 	if(md.start_of_burst == true) {
+		std::cout << "runtime_error: md.start_of_burst is already set to true" << std::endl;
 		throw new std::runtime_error("md.start_of_burst is already set to true");
 	}
 	md.start_of_burst = true;
-	if(not stop_signal_called) {
-		std::vector< std::complex<float> > buff(spb);
-		tx_stream->send(&buff.front(), buff.size(), md);
-	}
+	std::vector< std::complex<float> > buff(spb);
+	tx_stream->send(&buff.front(), buff.size(), md);
 	md.start_of_burst = false;
 }
 
 void USRP_tx::send_end_of_burst() {
 	if(md.end_of_burst == true) {
+		std::cout << "runtime_error: md.end_of_burst is already set to true" << std::endl;
 		throw new std::runtime_error("md.end_of_burst is already set to true");
 	}
 	//last time transmitting
