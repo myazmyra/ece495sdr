@@ -32,6 +32,7 @@ class USRP_tx {
     const size_t spb;// = 9075; //samples per buffer; has to satisfy -> spb = k * Fs/Fc * usrp->get_max_num_samps(); for some integer k; here k = 8
 
     uhd::usrp::multi_usrp::sptr usrp_tx; //usrp device
+    uhd::stream_args_t stream_args; //stream arguments
     uhd::tx_streamer::sptr tx_stream; //streamer object
     std::vector<std::string> sensor_names; //sensor names to be used when checking for clock locking etc.
     uhd::tx_metadata_t md; //metadata for the streamer object

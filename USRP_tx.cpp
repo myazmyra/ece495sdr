@@ -1,7 +1,7 @@
 #include "USRP_tx.h"
 
 USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("sc16"),
-		     											sample_rate(sample_rate), spb(spb) { //initialize the constants
+		     											sample_rate(sample_rate), spb(spb), stream_args(cpufmt, otw) { //initialize the constants
 
 	//give thread priority to this thread
 	uhd::set_thread_priority_safe();
@@ -23,18 +23,14 @@ USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"
     boost::this_thread::sleep(boost::posix_time::seconds(1));
 
     //create a transmit streamer
-    uhd::stream_args_t stream_args(cpufmt, otw); //stream arguments
     tx_stream = usrp->get_tx_stream(stream_args);
-
-
+	//initialize metadata
+    md.start_of_burst = false;
+    md.end_of_burst = false;
 
     //set timestamp to ZERO
     std::cout << boost::format("Setting device timestamp to 0...") << std::endl << std::endl;
     usrp->set_time_now(0.0);
-
-	//initialize metadata
-    md.start_of_burst = false;
-    md.end_of_burst = false;
 
     //Check Ref and LO Lock detect
     sensor_names = usrp->get_tx_sensor_names(0);
