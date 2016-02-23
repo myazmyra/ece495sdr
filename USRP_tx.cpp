@@ -46,7 +46,7 @@ USRP_tx::~USRP_tx() {
     std::cout << "Destroying the USRP_tx object..." << std::endl << std::endl;
 }
 
-int USRP_tx::transmit(std::vector< std::complex<float> > buff) {
+int USRP_tx::transmit(std::vector< std::complex<float> > buff, size_t N) {
 	if(md.end_of_burst == true) {
 		std::cout << "runtime_error: invalid attempt to transmit after md.end_of_burst is set to true" << std::endl;
 		throw new std::runtime_error("invalid attempt to transmit after md.end_of_burst is set to true");
@@ -55,7 +55,7 @@ int USRP_tx::transmit(std::vector< std::complex<float> > buff) {
 		throw new std::runtime_error("invalid attempt to transmit start burst");
 	}
 	//send the entire buffer
-	tx_stream->send(&buff.front(), buff.size(), md);
+	tx_stream->send(&buff.front(), N, md);
   	return 1;
 }
 
