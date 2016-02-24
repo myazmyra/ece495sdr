@@ -13,6 +13,9 @@ void sig_int_handler(int junk) {
  * Function Declarations
  **********************************************************************/
 
+ //void transmit(Parameters p, USRP_tx usrp_tx, BPSK_tx bpsk_tx, std::vector<int> bits);
+ //void feedback(Parameters p, USRP_tx usrp_tx);
+
 int main(int argc, char *argv[]) {
     //give thread priority to this thread
 	uhd::set_thread_priority_safe();
