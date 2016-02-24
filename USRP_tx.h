@@ -17,7 +17,7 @@ class USRP_tx {
  public:
 
     USRP_tx(double sample_rate, double f_c, size_t spb);
-    virtual ~USRP_tx();
+    ~USRP_tx();
     int transmit(std::vector< std::complex<float> > buff, size_t N);
     void send_start_of_burst();
     void send_end_of_burst();

@@ -3,9 +3,6 @@
 USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("sc16"),
 		     											sample_rate(sample_rate), spb(spb), stream_args(cpufmt, otw) { //initialize the constants
 
-	//give thread priority to this thread
-	uhd::set_thread_priority_safe();
-
     //create a usrp_tx device
     std::cout << std::endl;
     std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
