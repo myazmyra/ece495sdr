@@ -29,7 +29,7 @@ class USRP_tx {
     const std::string cpufmt;// = "fc32"; //cpu sample format
     const std::string otw;// = "sc16"; //specify over the wire sample mode
     const double sample_rate;// = 12.5e6; //sample_rate between the PC and Motherboard
-    const size_t spb;// = 9075; //samples per buffer; has to satisfy -> spb = k * Fs/Fc * usrp->get_max_num_samps(); for some integer k; here k = 8
+    size_t spb;// = 9075; //samples per buffer; has to satisfy -> spb = k * Fs/Fc * usrp->get_max_num_samps(); for some integer k; here k = 8
 
     uhd::usrp::multi_usrp::sptr usrp_tx; //usrp device
     uhd::stream_args_t stream_args; //stream arguments

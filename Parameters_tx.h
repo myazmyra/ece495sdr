@@ -1,3 +1,5 @@
+#include <iostream>
+
 #ifndef _Included_Parameters_tx
 #define _Included_Parameters_tx
 
@@ -20,6 +22,5 @@ class Parameters_tx {
     size_t spb;// = 9075; //samples per buffer; has to satisfy -> spb = k * Fs/Fc * tx_streamer->get_max_num_samps(); for some integer k; here k = 8
 
 };
-
 
 #endif
