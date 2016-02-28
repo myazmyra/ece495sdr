@@ -9,7 +9,7 @@ class BPSK_tx {
 
     BPSK_tx(double sample_rate, double f_c, double bit_rate, size_t spb);
     ~BPSK_tx();
-    std::vector< std::complex<float> > modulate(bool bit);
+    std::vector< std::complex<float> > modulate(uint8_t bit);
 
   private:
 

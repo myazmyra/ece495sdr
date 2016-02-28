@@ -3,6 +3,7 @@
 #include "BPSK_tx.h"
 
 #include <iostream>
+#include <cstdint>
 #include <fstream>
 #include <thread>
 #include <mutex>
@@ -22,10 +23,10 @@ int received = 0;
 /***********************************************************************
  * Function Declarations
  **********************************************************************/
-
-void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<bool> bits);
+void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits);
 void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx);
-std::vector<bool> readFile(std::string fileName);
+std::vector<uint8_t> readFile(std::string fileName);
+std::vector<uint8_t> formPackets(char* bytes, int size);
 
 int main(int argc, char** argv) {
     //give thread priority to this thread
@@ -50,8 +51,8 @@ int main(int argc, char** argv) {
     std::signal(SIGINT, &sig_int_handler);
     std::cout << "Press Ctrl + C to stop streaming..." << std::endl << std::endl;
 
-    std::string fileName = "testfile.txt";
-    std::vector<bool> bits = readFile(fileName);
+    const std::string fileName = "testfile.txt";
+    std::vector<uint8_t> bits = readFile(fileName);
 
     //create threads and start them
     //transmit data
@@ -64,8 +65,8 @@ int main(int argc, char** argv) {
     receive_thread.join();
 
     std::cout << std::endl << std::endl;
-    std::cout << "Transmitted: " << transmitted << " times." << std::endl;
-    std::cout << "Received: " << received << " times." << std::endl;
+    std::cout << "Transmitted: " << transmitted << " times" << std::endl;
+    std::cout << "Received: " << received << " times" << std::endl;
     std::cout << std::endl;
 
     delete usrp_tx;
@@ -75,7 +76,7 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<bool> bits) {
+void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits) {
     //start burst
     usrp_tx->send_start_of_burst();
 
@@ -105,7 +106,7 @@ void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx) {
     }
 }
 
-std::vector<bool> readFile(std::string fileName) {
+std::vector<uint8_t> readFile(std::string fileName) {
     std::ifstream file(fileName, std::ios::ate | std::ios::binary);
     std::ifstream::pos_type size = 0;
     char* bytes = NULL;
@@ -120,14 +121,79 @@ std::vector<bool> readFile(std::string fileName) {
         std::cout << "Unable to open file: " << fileName << std::endl << std::endl;
         throw new std::runtime_error("Unable to open input file" + fileName);
     }
-    std::vector<bool> bits;
-    for(int i = 0; i < (int) size; i++) {
-        int byte = (int) bytes[i];
+
+    std::vector<uint8_t> packets = formPackets(bytes, (int) size);
+
+    std::vector<uint8_t> bits;
+    for(int i = 0; i < (int) packets.size(); i++) {
+        uint8_t byte = packets[i];
         for(int j = 0; j < 8; j++) {
-            bits.push_back((byte & 1) == 1);
+            bits.push_back(byte & 1);
             byte >>= 1;
         }
     }
-    //formPackets(bits);
     return bits;
+}
+
+std::vector<uint8_t> formPackets(char* data, int size) {
+    //a packet will consist of:
+    //2 bytes of preamble + 12 bytes of data + 2 bytes of checksum = 16 bytes
+    int data_per_packet = 12;
+    int num_packets = size / data_per_packet;
+
+    const uint8_t LFSR_one = 30; //first byte of 15 bit LFSR
+    const uint8_t LFSR_two = 178; //second byte of 15 bit LFSR padded with 0
+
+    std::vector<uint8_t> packets;
+    for(int i = 0; i < num_packets; i++) {
+        packets.push_back(LFSR_one);
+        packets.push_back(LFSR_two);
+        //first part
+        uint8_t checksum1 = 0;
+        for(int j = 0; j < data_per_packet / 2; j++) {
+            uint8_t byte = (uint8_t) data[data_per_packet * i + j];
+            checksum1 ^= byte;
+            packets.push_back(byte);
+        }
+        //second part
+        uint8_t checksum2 = 0;
+        for(int j = data_per_packet / 2; j < data_per_packet; j++) {
+            uint8_t byte = (uint8_t) data[data_per_packet * i + j];
+            checksum2 ^= byte;
+            packets.push_back(byte);
+        }
+        packets.push_back(checksum1);
+        packets.push_back(checksum2);
+    }
+
+    int remaining_bytes = size % data_per_packet;
+
+    //if added everything, return
+    if(remaining_bytes == 0) return packets;
+
+    packets.push_back(LFSR_one);
+    packets.push_back(LFSR_two);
+
+    //first part
+    uint8_t checksum1 = 0;
+    for(int i = num_packets; i < num_packets + remaining_bytes / 2; i++) {
+        uint8_t byte = (uint8_t) data[i];
+        checksum1 ^= byte;
+        packets.push_back(byte);
+    }
+    //second part
+    uint8_t checksum2 = 0;
+    for(int i = num_packets + remaining_bytes / 2; i < num_packets + remaining_bytes; i++) {
+        uint8_t byte = (uint8_t) data[i];
+        checksum2 ^= byte;
+        packets.push_back(byte);
+    }
+    //pad zeros
+    int num_padded_zeros = data_per_packet - remaining_bytes;
+    for(int i = 0; i < num_padded_zeros; i++) {
+        packets.push_back(0);
+    }
+    packets.push_back(checksum1);
+    packets.push_back(checksum2);
+    return packets;
 }
