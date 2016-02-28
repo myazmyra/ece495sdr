@@ -2,6 +2,8 @@
 #include "USRP_tx.h"
 #include "BPSK_tx.h"
 
+#include <iostream>
+#include <fstream>
 #include <thread>
 #include <mutex>
 
@@ -19,10 +21,11 @@ std::mutex mtx;
  * Function Declarations
  **********************************************************************/
 
- void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<int> bits);
- void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx);
+void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<bool> bits);
+void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx);
+void readFile(std::string fileName, std::vector<bool>& result);
 
-int main(int argc, char *argv[]) {
+int main(int argc, char** argv) {
     //give thread priority to this thread
 	uhd::set_thread_priority_safe();
 
@@ -48,7 +51,14 @@ int main(int argc, char *argv[]) {
     //std::vector<int> bytes = readFile(argv[1]);
     //std::vector<int> bits = formPackets(bytes);
 
-    std::vector<int> bits(1000, 1);
+    std::string fileName = "testfile.txt";
+    std::vector<bool> bits;
+    readFile(fileName, bits);
+    std::cout << bits.size() << std::endl;
+    for(int i = 0; i < (int) bits.size(); i++) {
+        std::cout << bits[i];
+    }
+    std::cout << std::endl << std::endl;
 
     //create threads and start them
     //transmit data
@@ -67,7 +77,7 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<int> bits) {
+void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<bool> bits) {
     //start burst
     usrp_tx->send_start_of_burst();
 
@@ -92,5 +102,30 @@ void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx) {
         //change the parameters
         //parameters_tx.change(double bit_rate, usrp_tx, bpsk_tx);
         mtx.unlock();
+    }
+}
+
+void readFile(std::string fileName, std::vector<bool>& result) {
+    std::ifstream file(fileName, std::ios::ate | std::ios::binary);
+    std::ifstream::pos_type size = 0;
+    char* bytes = NULL;
+    if(file.is_open()) {
+        std::cout << "Successfully opened file: " << fileName << std::endl << std::endl;
+        size =  file.tellg();
+        bytes = new char[size];
+        file.seekg(0, std::ios::beg);
+        file.read(bytes, size);
+        file.close();
+    } else {
+        std::cout << "Unable to open file: " << fileName << std::endl << std::endl;
+        throw new std::runtime_error("Unable to open input file");
+    }
+    std::cout << bytes[0] << std::endl;
+    for(int i = 0; i < (int) size; i++) {
+        int byte = (int) bytes[i];
+        for(int j = 0; j < 8; j++) {
+            result.push_back((byte & 1) == 1);
+            byte >>= 1;
+        }
     }
 }

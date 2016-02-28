@@ -19,6 +19,6 @@ BPSK_tx::~BPSK_tx() {
     std::cout << "Destroying the BPSK_tx object..." << std::endl << std::endl;
 }
 
-std::vector< std::complex<float> > BPSK_tx::modulate(int bit) {
-    return bit == 1 ? positive : negative;
+std::vector< std::complex<float> > BPSK_tx::modulate(bool bit) {
+    return bit ? positive : negative;
 }
