@@ -16,6 +16,8 @@ void sig_int_handler(int junk) {
 }
 
 std::mutex mtx;
+int transmitted = 0;
+int received = 0;
 
 /***********************************************************************
  * Function Declarations
@@ -23,7 +25,7 @@ std::mutex mtx;
 
 void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<bool> bits);
 void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx);
-void readFile(std::string fileName, std::vector<bool>& result);
+std::vector<bool> readFile(std::string fileName);
 
 int main(int argc, char** argv) {
     //give thread priority to this thread
@@ -48,17 +50,8 @@ int main(int argc, char** argv) {
     std::signal(SIGINT, &sig_int_handler);
     std::cout << "Press Ctrl + C to stop streaming..." << std::endl << std::endl;
 
-    //std::vector<int> bytes = readFile(argv[1]);
-    //std::vector<int> bits = formPackets(bytes);
-
     std::string fileName = "testfile.txt";
-    std::vector<bool> bits;
-    readFile(fileName, bits);
-    std::cout << bits.size() << std::endl;
-    for(int i = 0; i < (int) bits.size(); i++) {
-        std::cout << bits[i];
-    }
-    std::cout << std::endl << std::endl;
+    std::vector<bool> bits = readFile(fileName);
 
     //create threads and start them
     //transmit data
@@ -69,6 +62,11 @@ int main(int argc, char** argv) {
 
     transmit_thread.join();
     receive_thread.join();
+
+    std::cout << std::endl << std::endl;
+    std::cout << "Transmitted: " << transmitted << " times." << std::endl;
+    std::cout << "Received: " << received << " times." << std::endl;
+    std::cout << std::endl;
 
     delete usrp_tx;
     delete bpsk_tx;
@@ -85,6 +83,7 @@ void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, 
     while(not stop_signal_called) {
         mtx.lock();
         usrp_tx->transmit(bpsk_tx->modulate(bits[i]), parameters_tx->get_spb());
+        transmitted++;
         mtx.unlock();
         i++;
         i %= (int) bits.size();
@@ -97,15 +96,16 @@ void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, 
 void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx) {
     while(not stop_signal_called) {
         //receive some stuff from the microcontroller
-        //usrp_tx.receive();
         mtx.lock();
+        //usrp_tx.receive();
         //change the parameters
         //parameters_tx.change(double bit_rate, usrp_tx, bpsk_tx);
+        received++;
         mtx.unlock();
     }
 }
 
-void readFile(std::string fileName, std::vector<bool>& result) {
+std::vector<bool> readFile(std::string fileName) {
     std::ifstream file(fileName, std::ios::ate | std::ios::binary);
     std::ifstream::pos_type size = 0;
     char* bytes = NULL;
@@ -118,14 +118,16 @@ void readFile(std::string fileName, std::vector<bool>& result) {
         file.close();
     } else {
         std::cout << "Unable to open file: " << fileName << std::endl << std::endl;
-        throw new std::runtime_error("Unable to open input file");
+        throw new std::runtime_error("Unable to open input file" + fileName);
     }
-    std::cout << bytes[0] << std::endl;
+    std::vector<bool> bits;
     for(int i = 0; i < (int) size; i++) {
         int byte = (int) bytes[i];
         for(int j = 0; j < 8; j++) {
-            result.push_back((byte & 1) == 1);
+            bits.push_back((byte & 1) == 1);
             byte >>= 1;
         }
     }
+    //formPackets(bits);
+    return bits;
 }
