@@ -77,17 +77,20 @@ int main(int argc, char** argv) {
 }
 
 void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits) {
+
+    int i = 0;
+    int size = (int) bits.size();
+
     //start burst
     usrp_tx->send_start_of_burst();
 
-    int i = 0;
     while(not stop_signal_called) {
         mtx.lock();
         usrp_tx->transmit(bpsk_tx->modulate(bits[i]), parameters_tx->get_spb());
         transmitted++;
         mtx.unlock();
         i++;
-        i %= (int) bits.size();
+        i %= size;
     }
 
     //stop transmission
