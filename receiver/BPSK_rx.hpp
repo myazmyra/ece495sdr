@@ -17,6 +17,7 @@ class BPSK_rx {
     size_t spb;// = 9075; //samples per buffer; has to satisfy -> spb = k * Fs/Fc * tx_streamer->get_max_num_samps(); for some integer k; here k = 8
     std::vector< std::complex<float> > positive;
     std::vector< std::complex<float> > negative;
+    
 };
 
 #endif

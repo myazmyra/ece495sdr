@@ -32,6 +32,11 @@ int main(int argc, char** argv) {
     //give thread priority to this thread
 	uhd::set_thread_priority_safe();
 
+    //initialize USRP_tx
+    USRP_tx* usrp_tx = new USRP_tx(sample_rate, f_c, spb);
+
+
+
     //initialize Parameters
     Parameters_tx* parameters_tx = new Parameters_tx();
 
@@ -43,9 +48,6 @@ int main(int argc, char** argv) {
 
     //initialize BPSK_tx
     BPSK_tx* bpsk_tx = new BPSK_tx(sample_rate, f_c, bit_rate, spb);
-
-    //initialize USRP_tx
-    USRP_tx* usrp_tx = new USRP_tx(sample_rate, f_c, spb);
 
     //makes it possible to stop the program by pressing Ctrl+C
     std::signal(SIGINT, &sig_int_handler);
@@ -69,9 +71,9 @@ int main(int argc, char** argv) {
     std::cout << "Received: " << received << " times" << std::endl;
     std::cout << std::endl;
 
-    delete usrp_tx;
     delete bpsk_tx;
     delete parameters_tx;
+    delete usrp_tx;
 
     return EXIT_SUCCESS;
 }
@@ -125,7 +127,7 @@ std::vector<uint8_t> readFile(std::string fileName) {
         throw new std::runtime_error("Unable to open input file" + fileName);
     }
 
-    std::vector<uint8_t> packets = formPackets(bytes, (int) size);
+    std::vector<uint8_t> packets = PacketEncoder.formPackets(bytes, (int) size);
 
     std::vector<uint8_t> bits;
     for(int i = 0; i < (int) packets.size(); i++) {

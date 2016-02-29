@@ -1,6 +1,5 @@
-#include "Parameters_rx.h"
-#include "USRP_rx.h"
-#include "BPSK_rx.h"
+#include "Parameters_rx.hpp"
+#include "BPSK_rx.hpp"
 
 #include <iostream>
 #include <cstdint>

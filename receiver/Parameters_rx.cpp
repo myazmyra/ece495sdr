@@ -1,4 +1,4 @@
-#include "Parameters_rx.h"
+#include "Parameters_rx.hpp"
 
 Parameters_rx::Parameters_rx() : sample_rate(12.5e6), f_c(4e6) {
 
