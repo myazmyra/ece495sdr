@@ -1,6 +1,6 @@
-#include "BPSK_tx.hpp"
+#include "BPSK_rx.h"
 
-BPSK_tx::BPSK_tx(double sample_rate, double f_c, double bit_rate, size_t spb) :
+BPSK_rx::BPSK_rx(double sample_rate, double f_c, double bit_rate, size_t spb) :
                  sample_rate(sample_rate), f_c(f_c), bit_rate(bit_rate), spb(spb),
                  positive(spb), negative(spb) {
     //do something, maybe check for aliasing after you get your 3-dB frequencies from the analog guys?
@@ -15,10 +15,6 @@ BPSK_tx::BPSK_tx(double sample_rate, double f_c, double bit_rate, size_t spb) :
     }
 }
 
-BPSK_tx::~BPSK_tx() {
+BPSK_rx::~BPSK_rx() {
     std::cout << "Destroying the BPSK_tx object..." << std::endl << std::endl;
-}
-
-std::vector< std::complex<float> > BPSK_tx::modulate(uint8_t bit) {
-    return bit ? positive : negative;
 }

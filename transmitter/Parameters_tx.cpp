@@ -1,4 +1,4 @@
-#include "Parameters_tx.h"
+#include "Parameters_tx.hpp"
 
 Parameters_tx::Parameters_tx() : sample_rate(12.5e6), f_c(4e6) {
 

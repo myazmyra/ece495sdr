@@ -1,6 +1,6 @@
-#include "Parameters_tx.h"
-#include "USRP_tx.h"
-#include "BPSK_tx.h"
+#include "Parameters_tx.hpp"
+#include "USRP_tx.hpp"
+#include "BPSK_tx.hpp"
 
 #include <iostream>
 #include <cstdint>
@@ -174,6 +174,7 @@ std::vector<uint8_t> formPackets(char* data, int size) {
     //if added everything, return
     if(remaining_bytes == 0) return packets;
 
+    //pad anything leftover
     packets.push_back(LFSR_one);
     packets.push_back(LFSR_two);
 

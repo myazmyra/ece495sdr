@@ -1,4 +1,4 @@
-#include "USRP_tx.h"
+#include "USRP_tx.hpp"
 
 USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("sc16"),
 		     											sample_rate(sample_rate), spb(spb), stream_args(cpufmt, otw) { //initialize the constants
