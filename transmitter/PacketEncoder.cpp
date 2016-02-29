@@ -1,7 +1,7 @@
 #include "PacketEncoder.hpp"
 
-static const uint8_t LFSR_one = 30; //first byte of 15 bit LFSR
-static const uint8_t LFSR_two = 178; //second byte of 15 bit LFSR padded with 0
+const uint8_t PacketEncoder::LFSR_one = 30; //first byte of 15 bit LFSR
+const uint8_t PacketEncoder::LFSR_two = 178; //second byte of 15 bit LFSR padded with 0
 
 std::vector<uint8_t> PacketEncoder::formPackets(char* data, int size) {
     //a packet will consist of:

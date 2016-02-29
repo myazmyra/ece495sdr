@@ -12,6 +12,11 @@ class PacketEncoder {
       static std::vector<uint8_t> formPackets(char* data, int size);
       static std::vector<uint8_t> bytes2bits(std::vector<uint8_t> packets);
 
+  private:
+
+      static uint8_t const LFSR_one; //first byte of 15 bit LFSR
+      static uint8_t const LFSR_two; //second byte of 15 bit LFSR padded with 0
+
 };
 
 #endif
