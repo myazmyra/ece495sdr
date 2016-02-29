@@ -1,3 +1,4 @@
+#include "PacketEncoder.hpp"
 #include "Parameters_tx.hpp"
 #include "USRP_tx.hpp"
 #include "BPSK_tx.hpp"
@@ -26,16 +27,10 @@ int received = 0;
 void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits);
 void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx);
 std::vector<uint8_t> readFile(std::string fileName);
-std::vector<uint8_t> formPackets(char* bytes, int size);
 
 int main(int argc, char** argv) {
     //give thread priority to this thread
 	uhd::set_thread_priority_safe();
-
-    //initialize USRP_tx
-    USRP_tx* usrp_tx = new USRP_tx(sample_rate, f_c, spb);
-
-
 
     //initialize Parameters
     Parameters_tx* parameters_tx = new Parameters_tx();
@@ -45,6 +40,9 @@ int main(int argc, char** argv) {
     const double f_c = parameters_tx->get_f_c();
     size_t spb = parameters_tx->get_spb();
     double bit_rate = parameters_tx->get_bit_rate();
+
+    //initialize USRP_tx
+    USRP_tx* usrp_tx = new USRP_tx(sample_rate, f_c, spb);
 
     //initialize BPSK_tx
     BPSK_tx* bpsk_tx = new BPSK_tx(sample_rate, f_c, bit_rate, spb);
@@ -127,79 +125,5 @@ std::vector<uint8_t> readFile(std::string fileName) {
         throw new std::runtime_error("Unable to open input file" + fileName);
     }
 
-    std::vector<uint8_t> packets = PacketEncoder.formPackets(bytes, (int) size);
-
-    std::vector<uint8_t> bits;
-    for(int i = 0; i < (int) packets.size(); i++) {
-        uint8_t byte = packets[i];
-        for(int j = 0; j < 8; j++) {
-            bits.push_back(byte & 1);
-            byte >>= 1;
-        }
-    }
-    return bits;
-}
-
-std::vector<uint8_t> formPackets(char* data, int size) {
-    //a packet will consist of:
-    //2 bytes of preamble + 12 bytes of data + 2 bytes of checksum = 16 bytes
-    int data_per_packet = 12;
-    int num_packets = size / data_per_packet;
-
-    const uint8_t LFSR_one = 30; //first byte of 15 bit LFSR
-    const uint8_t LFSR_two = 178; //second byte of 15 bit LFSR padded with 0
-
-    std::vector<uint8_t> packets;
-    for(int i = 0; i < num_packets; i++) {
-        packets.push_back(LFSR_one);
-        packets.push_back(LFSR_two);
-        //first part
-        uint8_t checksum1 = 0;
-        for(int j = 0; j < data_per_packet / 2; j++) {
-            uint8_t byte = (uint8_t) data[data_per_packet * i + j];
-            checksum1 ^= byte;
-            packets.push_back(byte);
-        }
-        //second part
-        uint8_t checksum2 = 0;
-        for(int j = data_per_packet / 2; j < data_per_packet; j++) {
-            uint8_t byte = (uint8_t) data[data_per_packet * i + j];
-            checksum2 ^= byte;
-            packets.push_back(byte);
-        }
-        packets.push_back(checksum1);
-        packets.push_back(checksum2);
-    }
-
-    int remaining_bytes = size % data_per_packet;
-
-    //if added everything, return
-    if(remaining_bytes == 0) return packets;
-
-    //pad anything leftover
-    packets.push_back(LFSR_one);
-    packets.push_back(LFSR_two);
-
-    //first part
-    uint8_t checksum1 = 0;
-    for(int i = num_packets; i < num_packets + remaining_bytes / 2; i++) {
-        uint8_t byte = (uint8_t) data[i];
-        checksum1 ^= byte;
-        packets.push_back(byte);
-    }
-    //second part
-    uint8_t checksum2 = 0;
-    for(int i = num_packets + remaining_bytes / 2; i < num_packets + remaining_bytes; i++) {
-        uint8_t byte = (uint8_t) data[i];
-        checksum2 ^= byte;
-        packets.push_back(byte);
-    }
-    //pad zeros
-    int num_padded_zeros = data_per_packet - remaining_bytes;
-    for(int i = 0; i < num_padded_zeros; i++) {
-        packets.push_back(0);
-    }
-    packets.push_back(checksum1);
-    packets.push_back(checksum2);
-    return packets;
+    return PacketEncoder::formPackets(bytes, (int) size);
 }
