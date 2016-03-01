@@ -1,6 +1,6 @@
 #include "USRP_tx.hpp"
 
-USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"), ref("internal"), cpufmt("fc32"), otw("sc16"),
+USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=F2A017"), ref("internal"), cpufmt("fc32"), otw("sc16"),
 		     											sample_rate(sample_rate), spb(spb), stream_args(cpufmt, otw) { //initialize the constants
 
     //create a usrp_tx device
@@ -12,9 +12,9 @@ USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"
     usrp_tx->set_clock_source(ref);
 
     //set the sample_rate
-    std::cout << std::endl << boost::format("Setting TX Rate: %f Msps...") % (sample_rate/1e6) << std::endl;
+    std::cout << std::endl << boost::format("Setting TX Rate: %f Msps...") % (sample_rate / 1e6) << std::endl;
     usrp_tx->set_tx_rate(sample_rate);
-    std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp_tx->get_tx_rate()/1e6) << std::endl << std::endl;
+    std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp_tx->get_tx_rate() / 1e6) << std::endl << std::endl;
 
     //allow for some setup time
     boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -26,6 +26,8 @@ USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=901"
     //Check Ref and LO Lock detect
     sensor_names = usrp_tx->get_tx_sensor_names(0);
     if (std::find(sensor_names.begin(), sensor_names.end(), "lo_locked") != sensor_names.end()) {
+		//allow for some time, need more sleeping time for SBX
+		boost::this_thread::sleep(boost::posix_time::seconds(2));
         uhd::sensor_value_t lo_locked = usrp_tx->get_tx_sensor("lo_locked",0);
         std::cout << boost::format("Checking TX: %s ...") % lo_locked.to_pp_string() << std::endl << std::endl;
         UHD_ASSERT_THROW(lo_locked.to_bool());
