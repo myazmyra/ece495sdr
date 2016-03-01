@@ -50,17 +50,15 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
         inFile = std::string(argv[3]);
-        if(argc > 4) {
-            outFile = std::string(argv[4]);
+        if(mode == std::string("local") && argc < 5) {
+            printHelp();
+            return EXIT_FAILURE;
         }
+        outFile = std::string(argv[4]);
     }
 
     //reads the file, forms packets, converts to bit sequences
     std::vector<uint8_t> bits = readFile(inFile);
-
-    //give thread priority to this thread
-	uhd::set_thread_priority_safe();
-    std::cout << std::endl;
 
     //initialize Parameters
     Parameters_tx* parameters_tx = new Parameters_tx();
@@ -86,6 +84,9 @@ int main(int argc, char** argv) {
     }
 
     //else, broadcast mode, transmit through usrp
+    //give thread priority to this thread
+	uhd::set_thread_priority_safe();
+    std::cout << std::endl;
 
     //initialize USRP_tx
     USRP_tx* usrp_tx = new USRP_tx(sample_rate, f_c, spb);
