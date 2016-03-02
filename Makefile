@@ -8,7 +8,7 @@ SOURCES_TX=tx/src/*
 IDIR_RX=rx/include
 SOURCES_RX=rx/src/*
 
-all: main_tx
+all: main_tx main_rx
 
 main_tx: $(SOURCES_TX)
 	$(CC) $(CFLAGS) -I$(IDIR_TX) $(SOURCES_TX) $(LIBS) -o main_tx

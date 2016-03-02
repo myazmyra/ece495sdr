@@ -25,6 +25,7 @@ int received = 0;
  * Function Declarations
  **********************************************************************/
 void printHelp();
+void openFile(std::string filename);
 void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits);
 void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx);
 std::vector<uint8_t> readFile(std::string inFile);
@@ -46,7 +47,7 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
         mode = std::string(argv[2]);
-        if(mode != std::string("broadcast") && mode != std::string("local")) {
+        if(mode != std::string("usrp") && mode != std::string("local")) {
             printHelp();
             return EXIT_FAILURE;
         }
@@ -55,7 +56,9 @@ int main(int argc, char** argv) {
             printHelp();
             return EXIT_FAILURE;
         }
-        outFile = std::string(argv[4]);
+        if(mode == std::string("local")) {
+            outFile = std::string(argv[4]);
+        }
     }
 
     //reads the file, forms packets, converts to bit sequences
@@ -199,7 +202,7 @@ void sendToFile(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<uint
 
 void printHelp() {
     std::cout << "Usage: " << std::endl << std::endl;
-    std::cout << "./main_tx.o --mode broadcast [intput_filename]" << std::endl << std::endl;
+    std::cout << "./main_tx.o --mode usrp [infile_path]" << std::endl << std::endl;
     std::cout << "  or" << std::endl << std::endl;
-    std::cout << "./main_tx.o --mode local [intput_filename] [output_filename]" << std::endl << std::endl;
+    std::cout << "./main_tx.o --mode local [infile_path] [outfile_path]" << std::endl << std::endl;
 }
