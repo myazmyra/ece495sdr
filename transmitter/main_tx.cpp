@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
     std::string inFile;
     std::string outFile;
 
+    //input validation
     if(argc < 2) {
         printHelp();
         return EXIT_FAILURE;
@@ -66,8 +67,8 @@ int main(int argc, char** argv) {
     //obtain useful values
     const double sample_rate = parameters_tx->get_sample_rate();
     const double f_c = parameters_tx->get_f_c();
-    size_t spb = parameters_tx->get_spb();
     double bit_rate = parameters_tx->get_bit_rate();
+    size_t spb = parameters_tx->get_spb();
 
     //initialize BPSK_tx
     BPSK_tx* bpsk_tx = new BPSK_tx(sample_rate, f_c, bit_rate, spb);

@@ -3,7 +3,8 @@
 Parameters_rx::Parameters_rx() : sample_rate(12.5e6), f_c(4e6) {
 
     spb = 9075;
-    bit_rate = 1377.4104625;
+    bit_rate = 1377.4104625; //sample_rate / spb
+    //bw = 4 * bit_rate = 5,509.64185
 
 }
 
