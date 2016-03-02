@@ -80,13 +80,16 @@ void receiveFromFile(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx, std::string
         throw new std::runtime_error("Unable to open output file: " + outFile);
     }
 
+    std::cout << "Successfully opened input file: " << inFile << std::endl << std::endl;
+    std::cout << "Successfully opened ouput file: " << outFile << std::endl << std::endl;
+
     size_t spb = parameters_rx->get_spb();
     //you will need to create new buffer each time you receive something
     std::vector< std::complex<float> >* buff_ptr;
 
     while(true) {
-        buff_ptr = new std::vector< std::complex< float > >(spb);
-        infile.read((char*) &buff_ptr, spb * sizeof(std::complex<float>));
+        buff_ptr = new std::vector< std::complex<float> >(spb);
+        infile.read((char*) &(buff_ptr->front()), spb * sizeof(std::complex<float>));
         if(infile.eof()) break;
 
         /*
@@ -97,9 +100,11 @@ void receiveFromFile(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx, std::string
         //also needed to implement how many errors were detected
         //and return number of samples recovered
         std::vector<uint8_t> data = bpsk_rx->process(buff_ptr, spb);
-        for(int i = 0; i < (int) data.size(); i++) {
+        for(int i = 0; i < (int) 30; i++) {
             outfile.write((char*) &data[i], sizeof(char));
         }
+        const char* nl = "\n";
+        outfile.write((char*) nl, sizeof(char));
     }
 
     std::cout << "Done receiving from input file: " << inFile << std::endl << std::endl;
@@ -112,5 +117,5 @@ void printHelp() {
     std::cout << "Usage: " << std::endl << std::endl;
     std::cout << "./main_rx --mode usrp [infile_path]" << std::endl << std::endl;
     std::cout << "  or" << std::endl << std::endl;
-    std::cout << "./main_tx --mode local [infile_path] [outfile_path]" << std::endl << std::endl;
+    std::cout << "./main_rx --mode local [infile_path] [outfile_path]" << std::endl << std::endl;
 }
