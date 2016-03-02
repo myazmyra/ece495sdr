@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     std::string outFile;
 
     //input validation
-    if(argc < 2) {
+    if(argc < 4) {
         printHelp();
         return EXIT_FAILURE;
     } else {
