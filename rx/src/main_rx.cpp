@@ -7,6 +7,8 @@
 #include <thread>
 #include <mutex>
 
+//NEED TO ADD PACKET DECODER CLASS
+
 /***********************************************************************
  * Miscellaneous
  **********************************************************************/
@@ -120,11 +122,11 @@ void receiveFromFile(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx, std::string
     int checksum_size = 2;
     int packet_size = preamble_size + bytes_per_packet + checksum_size;
 
-    for(int i = 0; i < (int) bits.size(); i += packet_size * 8) {
-        for(int j = i + preamble_size * 8; j < i + (preamble_size + bytes_per_packet) * 8; j += 8) {
+    for(int i = 0; i < (int) bits.size(); i += packet_size * 8) {//iterate through packets
+        for(int j = i + preamble_size * 8; j < i + (preamble_size + bytes_per_packet) * 8; j += 8) { //iterate through data bytes
             char c = 0;
             uint8_t mask = 1;
-            for(int k = j; k < j + 8; k++) {
+            for(int k = j; k < j + 8; k++) {//iterate through bits
                 c |= bits[k] ? mask : 0;
                 mask <<= 1;
             }
