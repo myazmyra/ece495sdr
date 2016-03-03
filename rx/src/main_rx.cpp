@@ -89,6 +89,9 @@ void receiveFromFile(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx, std::string
 
     std::vector<uint8_t> bits;
 
+    /***********************************************************************
+     * START: This portion of code is for demo, it needs to be rewritten
+     **********************************************************************/
     while(true) {
         buff_ptr = new std::vector< std::complex<float> >(spb);
         infile.read((char*) &(buff_ptr->front()), spb * sizeof(std::complex<float>));
@@ -117,7 +120,6 @@ void receiveFromFile(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx, std::string
     int checksum_size = 2;
     int packet_size = preamble_size + bytes_per_packet + checksum_size;
 
-
     for(int i = 0; i < (int) bits.size(); i += packet_size * 8) {
         for(int j = i + preamble_size * 8; j < i + (preamble_size + bytes_per_packet) * 8; j += 8) {
             char c = 0;
@@ -129,13 +131,9 @@ void receiveFromFile(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx, std::string
             outfile.write((char*) &c, sizeof(char));
         }
     }
-
-    /*
-    for(int i = 0; i < (int) bits.size(); i++) {
-        std::cout << (bits[i] ? 1 : 0);
-    }
-    std::cout << std::endl;
-    */
+    /***********************************************************************
+     * END: This portion of code is for demo, it needs to be rewritten
+     **********************************************************************/
 
     std::cout << "Done receiving from input file: " << inFile << std::endl << std::endl;
 
