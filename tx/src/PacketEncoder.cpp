@@ -34,7 +34,10 @@ std::vector<uint8_t> PacketEncoder::formPackets(char* data, int size) {
     int remaining_bytes = size % data_per_packet;
 
     //if added everything, return
-    if(remaining_bytes == 0) return packets;
+    if(remaining_bytes == 0) {
+        //transform bytes to bits and return
+        return bytes2bits(packets);
+    }
 
     //pad anything leftover
     packets.push_back(LFSR_one);

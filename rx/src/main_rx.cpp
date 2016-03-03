@@ -87,11 +87,12 @@ void receiveFromFile(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx, std::string
     //you will need to create new buffer each time you receive something
     std::vector< std::complex<float> >* buff_ptr;
 
+    std::vector<uint8_t> bits;
+
     while(true) {
         buff_ptr = new std::vector< std::complex<float> >(spb);
         infile.read((char*) &(buff_ptr->front()), spb * sizeof(std::complex<float>));
         if(infile.eof()) break;
-
         /*
         optimization needed in process(), probably pass reference to the buffer
         *this optimization needs to be done in so many other places*
@@ -99,13 +100,42 @@ void receiveFromFile(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx, std::string
         */
         //also needed to implement how many errors were detected
         //and return number of samples recovered
+        /*
         std::vector<uint8_t> data = bpsk_rx->process(buff_ptr, spb);
         for(int i = 0; i < (int) 30; i++) {
             outfile.write((char*) &data[i], sizeof(char));
         }
         const char* nl = "\n";
         outfile.write((char*) nl, sizeof(char));
+        */
+        bits.push_back(real(buff_ptr->at(0)) > 0 ? 1 : 0);
+        delete buff_ptr;
     }
+
+    int preamble_size = 2;
+    int bytes_per_packet = 12;
+    int checksum_size = 2;
+    int packet_size = preamble_size + bytes_per_packet + checksum_size;
+
+
+    for(int i = 0; i < (int) bits.size(); i += packet_size * 8) {
+        for(int j = i + preamble_size * 8; j < i + (preamble_size + bytes_per_packet) * 8; j += 8) {
+            char c = 0;
+            uint8_t mask = 1;
+            for(int k = j; k < j + 8; k++) {
+                c |= bits[k] ? mask : 0;
+                mask <<= 1;
+            }
+            outfile.write((char*) &c, sizeof(char));
+        }
+    }
+
+    /*
+    for(int i = 0; i < (int) bits.size(); i++) {
+        std::cout << (bits[i] ? 1 : 0);
+    }
+    std::cout << std::endl;
+    */
 
     std::cout << "Done receiving from input file: " << inFile << std::endl << std::endl;
 

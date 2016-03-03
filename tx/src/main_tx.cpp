@@ -192,7 +192,7 @@ void sendToFile(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<uint
 
     for(int i = 0; i < size; i++) {
         std::vector< std::complex<float> > buff = bpsk_tx->modulate(bits[i]);
-        file.write((const char*) &(buff.front()), spb * sizeof(std::complex<float>));
+        file.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
     }
 
     file.close();
