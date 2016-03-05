@@ -16,7 +16,7 @@ BPSK_rx::~BPSK_rx() {
     std::cout << "Destroying the BPSK_rx object..." << std::endl << std::endl;
 }
 
-std::vector<uint8_t> BPSK_rx::process(std::vector< std::complex<float> >* buff_ptr, size_t spb) {
-    std::vector<uint8_t> recovered_bytes(spb, (uint8_t) 'w');
-    return recovered_bytes;
+std::vector<uint8_t> BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers) {
+    std::vector<uint8_t> bits;
+    return bits;
 }

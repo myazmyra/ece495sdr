@@ -1,6 +1,6 @@
 #include "USRP_tx.hpp"
 
-USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=F2A017"), ref("internal"), cpufmt("fc32"), otw("sc16"),
+USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args(""), ref("internal"), cpufmt("fc32"), otw("sc16"),
 		     											sample_rate(sample_rate), spb(spb), stream_args(cpufmt, otw) { //initialize the constants
 
     //create a usrp_tx device
@@ -35,6 +35,7 @@ USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args("serial=F2A0
 
 	//create a transmit streamer
     tx_stream = usrp_tx->get_tx_stream(stream_args);
+
 	//initialize metadata
     md.start_of_burst = false;
     md.end_of_burst = false;

@@ -9,8 +9,8 @@ class PacketEncoder {
 
   public:
 
-      static std::vector<uint8_t> formPackets(char* data, int size);
-      static std::vector<uint8_t> bytes2bits(std::vector<uint8_t> packets);
+      static std::vector<uint8_t> form_packets(char* data, int size);
+      static std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> packets);
 
   private:
 

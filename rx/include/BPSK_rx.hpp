@@ -10,14 +10,14 @@ class BPSK_rx {
 
     BPSK_rx(double sample_rate, double f_c, double bit_rate, size_t spb);
     ~BPSK_rx();
-    std::vector<uint8_t> process(std::vector< std::complex<float> >* buff_ptr, size_t spb);
+    std::vector<uint8_t> receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers);
 
   private:
 
-    const double sample_rate;// = 12.5e6; //sample rate (frequency) between the PC and Motherboard
-    const double f_c;// = 4e6; //carrier frequency
-    double bit_rate; // = sample_rate / spb; to make it easier to generate each bit
-    size_t spb;// = 9075; //samples per buffer; has to satisfy -> spb = k * Fs/Fc * tx_streamer->get_max_num_samps(); for some integer k; here k = 8
+    const double sample_rate;
+    const double f_c;
+    double bit_rate;
+    size_t spb;
     std::vector< std::complex<float> > carrier;
 
 };

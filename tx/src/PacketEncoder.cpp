@@ -1,12 +1,14 @@
 #include "PacketEncoder.hpp"
 
+//a packet will consist of:
+//2 bytes of preamble + 12 bytes of data + 2 bytes of checksum = 16 bytes
+const int data_per_packet = 12;
 const uint8_t PacketEncoder::LFSR_one = 30; //first byte of 15 bit LFSR
 const uint8_t PacketEncoder::LFSR_two = 178; //second byte of 15 bit LFSR padded with 0
 
-std::vector<uint8_t> PacketEncoder::formPackets(char* data, int size) {
-    //a packet will consist of:
-    //2 bytes of preamble + 12 bytes of data + 2 bytes of checksum = 16 bytes
-    int data_per_packet = 12;
+
+std::vector<uint8_t> PacketEncoder::form_packets(char* data, int size) {
+
     int num_packets = size / data_per_packet;
 
     std::vector<uint8_t> packets;
@@ -36,7 +38,7 @@ std::vector<uint8_t> PacketEncoder::formPackets(char* data, int size) {
     //if added everything, return
     if(remaining_bytes == 0) {
         //transform bytes to bits and return
-        return bytes2bits(packets);
+        return bytes_to_bits(packets);
     }
 
     //pad anything leftover
@@ -66,10 +68,10 @@ std::vector<uint8_t> PacketEncoder::formPackets(char* data, int size) {
     packets.push_back(checksum2);
 
     //transform bytes to bits and return
-    return bytes2bits(packets);
+    return bytes_to_bits(packets);
 }
 
-std::vector<uint8_t> PacketEncoder::bytes2bits(std::vector<uint8_t> packets) {
+std::vector<uint8_t> PacketEncoder::bytes_to_bits(std::vector<uint8_t> packets) {
     std::vector<uint8_t> bits;
     for(int i = 0; i < (int) packets.size(); i++) {
         uint8_t byte = packets[i];

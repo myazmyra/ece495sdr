@@ -17,6 +17,10 @@ void sig_int_handler(int junk) {
     stop_signal_called = true;
 }
 
+std::string mode = "";
+std::string input_filename = "";
+std::string output_filename = "";
+
 std::mutex mtx;
 int transmitted = 0;
 int received = 0;
@@ -24,60 +28,34 @@ int received = 0;
 /***********************************************************************
  * Function Declarations
  **********************************************************************/
-void printHelp();
-void openFile(std::string filename);
+int validate_input(int argc, char** argv);
+void print_help();
+std::vector<uint8_t> read_file();
 void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits);
 void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx);
-std::vector<uint8_t> readFile(std::string inFile);
-void sendToFile(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits, std::string outFile);
+void send_to_file(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits);
 
 int main(int argc, char** argv) {
 
-    std::string mode;
-    std::string inFile;
-    std::string outFile;
-
     //input validation
-    if(argc < 4) {
-        printHelp();
+    if(validate_input(argc, argv) == 0) {
         return EXIT_FAILURE;
-    } else {
-        if(std::string(argv[1]) != std::string("--mode")) {
-            printHelp();
-            return EXIT_FAILURE;
-        }
-        mode = std::string(argv[2]);
-        if(mode != std::string("usrp") && mode != std::string("local")) {
-            printHelp();
-            return EXIT_FAILURE;
-        }
-        inFile = std::string(argv[3]);
-        if(mode == std::string("local") && argc < 5) {
-            printHelp();
-            return EXIT_FAILURE;
-        }
-        if(mode == std::string("local")) {
-            outFile = std::string(argv[4]);
-        }
     }
 
     //reads the file, forms packets, converts to bit sequences
-    std::vector<uint8_t> bits = readFile(inFile);
+    std::vector<uint8_t> bits = read_file();
 
     //initialize Parameters
     Parameters_tx* parameters_tx = new Parameters_tx();
 
-    //obtain useful values
-    const double sample_rate = parameters_tx->get_sample_rate();
-    const double f_c = parameters_tx->get_f_c();
-    double bit_rate = parameters_tx->get_bit_rate();
-    size_t spb = parameters_tx->get_spb();
-
     //initialize BPSK_tx
-    BPSK_tx* bpsk_tx = new BPSK_tx(sample_rate, f_c, bit_rate, spb);
+    BPSK_tx* bpsk_tx = new BPSK_tx(parameters_tx->get_sample_rate(),
+                                   parameters_tx->get_f_c(),
+                                   parameters_tx->get_bit_rate(),
+                                   parameters_tx->get_spb());
 
     if(mode == std::string("local")) {
-        sendToFile(parameters_tx, bpsk_tx, bits, outFile);
+        send_to_file(parameters_tx, bpsk_tx, bits);
 
         delete bpsk_tx;
         delete parameters_tx;
@@ -93,7 +71,8 @@ int main(int argc, char** argv) {
     std::cout << std::endl;
 
     //initialize USRP_tx
-    USRP_tx* usrp_tx = new USRP_tx(sample_rate, f_c, spb);
+    USRP_tx* usrp_tx = new USRP_tx(parameters_tx->get_sample_rate(),
+                                   parameters_tx->get_f_c(), parameters_tx->get_spb());
 
     //makes it possible to stop the program by pressing Ctrl+C
     std::signal(SIGINT, &sig_int_handler);
@@ -110,8 +89,8 @@ int main(int argc, char** argv) {
     receive_thread.join();
 
     std::cout << std::endl << std::endl;
-    std::cout << "Transmitted: " << transmitted << " times" << std::endl;
-    std::cout << "Received: " << received << " times" << std::endl;
+    std::cout << "Transmit thread called: " << transmitted << " times" << std::endl;
+    std::cout << "Receive thread called: " << received << " times" << std::endl;
     std::cout << std::endl;
 
     delete usrp_tx;
@@ -128,12 +107,17 @@ void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, 
     int i = 0;
     int size = (int) bits.size();
 
+    std::vector< std::complex<float> > positive = bpsk_tx->modulate(1);
+    std::vector< std::complex<float> > negative = bpsk_tx->modulate(0);
+
+    size_t spb = parameters_tx->get_spb();
+
     //start burst
     usrp_tx->send_start_of_burst();
 
     while(not stop_signal_called) {
         mtx.lock();
-        usrp_tx->transmit(bpsk_tx->modulate(bits[i]), parameters_tx->get_spb());
+        usrp_tx->transmit(bits[i] ? positive : negative, spb);
         transmitted++;
         mtx.unlock();
         i++;
@@ -156,53 +140,81 @@ void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx) {
     }
 }
 
-std::vector<uint8_t> readFile(std::string inFile) {
-    std::ifstream file(inFile, std::ios::ate | std::ios::binary);
+std::vector<uint8_t> read_file() {
+    std::ifstream infile(input_filename, std::ios::ate | std::ios::binary);
     std::ifstream::pos_type size = 0;
     char* bytes = NULL;
 
-    if(file.is_open() == false) {
-        std::cout << "Unable to open input file: " << inFile << std::endl << std::endl;
-        throw new std::runtime_error("Unable to open input file: " + inFile);
+    if(infile.is_open() == false) {
+        std::cout << "Unable to open input file: " << input_filename << std::endl << std::endl;
+        throw new std::runtime_error("Unable to open input file: " + input_filename);
     }
 
-    std::cout << "Successfully opened input file: " << inFile << std::endl << std::endl;
-    size =  file.tellg();
+    std::cout << "Successfully opened input file: " << input_filename << std::endl << std::endl;
+    size = infile.tellg();
     bytes = new char[size];
-    file.seekg(0, std::ios::beg);
-    file.read(bytes, size);
-    file.close();
+    infile.seekg(0, std::ios::beg);
+    infile.read(bytes, size);
+    infile.close();
 
     //this will automatically form packets with preamble and checksum and then
     //create bit sequences from bytes
-    return PacketEncoder::formPackets(bytes, (int) size);
+    std::vector<uint8_t> bits = PacketEncoder::form_packets(bytes, (int) size);
+    delete[] bytes;
+    return bits;
 }
 
-void sendToFile(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits, std::string outFile) {
-    std::ofstream file(outFile, std::ofstream::binary);
-    if(file.is_open() == false) {
-        std::cout << "Unable to open output file: " << outFile << std::endl << std::endl;
-        throw new std::runtime_error("Unable to open output file: " + outFile);
+void send_to_file(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits) {
+    std::ofstream outfile(output_filename, std::ofstream::binary);
+    if(outfile.is_open() == false) {
+        std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
+        throw new std::runtime_error("Unable to open output file: " + output_filename);
     }
 
-    std::cout << "Successfully opened output file: " << outFile << std::endl << std::endl;
+    std::cout << "Successfully opened output file: " << output_filename << std::endl << std::endl;
 
     int size = (int) bits.size();
     int spb = parameters_tx->get_spb();
 
     for(int i = 0; i < size; i++) {
         std::vector< std::complex<float> > buff = bpsk_tx->modulate(bits[i]);
-        file.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
+        outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
     }
 
-    file.close();
+    outfile.close();
 
-    std::cout << "Done writing to output file: " << outFile << std::endl << std::endl;
+    std::cout << "Done writing to output file: " << output_filename << std::endl << std::endl;
 }
 
-void printHelp() {
+void print_help() {
     std::cout << "Usage: " << std::endl << std::endl;
     std::cout << "./main_tx.o --mode usrp [infile_path]" << std::endl << std::endl;
     std::cout << "  or" << std::endl << std::endl;
     std::cout << "./main_tx.o --mode local [infile_path] [outfile_path]" << std::endl << std::endl;
+}
+
+int validate_input(int argc, char** argv) {
+    if(argc < 4) {
+        print_help();
+        return 0;
+    } else {
+        if(std::string(argv[1]) != std::string("--mode")) {
+            print_help();
+            return 0;
+        }
+        mode = std::string(argv[2]);
+        if(mode != std::string("usrp") && mode != std::string("local")) {
+            print_help();
+            return 0;
+        }
+        input_filename = std::string(argv[3]);
+        if(mode == std::string("local") && argc < 5) {
+            print_help();
+            return 0;
+        }
+        if(mode == std::string("local")) {
+            output_filename = std::string(argv[4]);
+        }
+    }
+    return 1;
 }

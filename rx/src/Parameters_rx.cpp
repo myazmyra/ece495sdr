@@ -1,10 +1,14 @@
 #include "Parameters_rx.hpp"
 
-Parameters_rx::Parameters_rx() : sample_rate(12.5e6), f_c(4e6) {
+Parameters_rx::Parameters_rx() : sample_rate(12.5e6 / 25), f_c(4e6) {
 
-    spb = 9075;
-    bit_rate = 1377.4104625; //sample_rate / spb
-    //bw = 4 * bit_rate = 5,509.64185
+    //explanation: sample_rate on the TX side is 12.5e6
+    //need a sample rate which is even divisor of 100e6
+    //need a decimation factor (25) to be a divisor of 9075
+    //thus: sample rate is 12.5e6 / 25
+
+    spb = 363;
+    bit_rate = sample_rate / spb; //sample_rate / spb
 
 }
 
