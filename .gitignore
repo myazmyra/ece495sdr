@@ -29,6 +29,7 @@
 
 # Miscellaneous
 *.txt
+*~
 *.bry
 bin/*
 main_tx

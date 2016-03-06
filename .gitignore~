@@ -30,7 +30,6 @@
 # Miscellaneous
 *.txt
 *.bry
-testfiles
 bin/*
 main_tx
 main_rx
