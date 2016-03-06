@@ -29,9 +29,8 @@
 
 # Miscellaneous
 *.txt
-*~
+*.~
 *.bry
-bin/*
 main_tx
 main_rx
 
