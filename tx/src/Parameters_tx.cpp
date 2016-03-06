@@ -2,7 +2,7 @@
 
 Parameters_tx::Parameters_tx() : sample_rate(12.5e6), f_c(4e6) {
 
-    spb = 9075;
+    spb = 8000;
     bit_rate = sample_rate / spb; //sends one buffer per bit
 
 }

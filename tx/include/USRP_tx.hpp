@@ -24,12 +24,12 @@ class USRP_tx {
 
  private:
 
-    const std::string args;// = "serial=901"; //single uhd device address args (example: "addr=192.168.10.2", "serial=901", "type=usrp2")
-    const std::string ref;// = "internal"; //clock reference (internal, external, mimo, gpsdo)
-    const std::string cpufmt;// = "fc32"; //cpu sample format
-    const std::string otw;// = "sc16"; //specify over the wire sample mode
-    const double sample_rate;// = 12.5e6; //sample_rate between the PC and Motherboard
-    size_t spb;// = 9075; //samples per buffer; has to satisfy -> spb = k * Fs/Fc * usrp->get_max_num_samps(); for some integer k; here k = 8
+    const std::string args; //single uhd device address args (example: "addr=192.168.10.2", "serial=901", "type=usrp2")
+    const std::string ref; //clock reference (internal, external, mimo, gpsdo)
+    const std::string cpufmt; //cpu sample format e.g. "fc32"
+    const std::string otw; //specify over the wire sample mode e.g. "sc16"
+    const double sample_rate; //sample_rate between the PC and Motherboard
+    size_t spb; //samples per buffer; has to satisfy -> spb = k * Fs/Fc for some integer k, spb must also be an integer itself
 
     uhd::usrp::multi_usrp::sptr usrp_tx; //usrp device
     uhd::stream_args_t stream_args; //stream arguments

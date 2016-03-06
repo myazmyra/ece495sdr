@@ -16,10 +16,10 @@ class Parameters_tx {
 
   private:
 
-    const double sample_rate;// = 12.5e6; //sample rate (frequency) between the PC and Motherboard
-    const double f_c;// = 4e6; //carrier frequency
-    double bit_rate; // = sample_rate / spb; to make it easier to generate each bit
-    size_t spb;// = 9075; //samples per buffer; has to satisfy -> spb = k * Fs/Fc * tx_streamer->get_max_num_samps(); for some integer k; here k = 8
+    const double sample_rate; //sample rate between the PC and Motherboard (or just think about it as sample rate), has to satisfy (100e6 / sample_rate) mod 2 == 0
+    const double f_c; //carrier frequency
+    double bit_rate; //sample_rate / spb; to make it easier to generate each bit
+    size_t spb; //samples per buffer; has to satisfy -> spb = k * Fs/Fc for some integer k, spb must also be an integer itself
 
 };
 

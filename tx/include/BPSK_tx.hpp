@@ -13,12 +13,12 @@ class BPSK_tx {
 
   private:
 
-    const double sample_rate;// = 12.5e6; //sample rate (frequency) between the PC and Motherboard
-    const double f_c;// = 4e6; //carrier frequency
-    double bit_rate; // = sample_rate / spb; to make it easier to generate each bit
-    size_t spb;// = 9075; //samples per buffer; has to satisfy -> spb = k * Fs/Fc * tx_streamer->get_max_num_samps(); for some integer k; here k = 8
-    std::vector< std::complex<float> > positive;
-    std::vector< std::complex<float> > negative;
+    const double sample_rate; //sample rate (frequency) between the PC and Motherboard
+    const double f_c; //carrier frequency
+    double bit_rate; //sample_rate / spb; to make it easier to generate each bit
+    size_t spb; //samples per buffer; has to satisfy -> spb = k * Fs/Fc for some integer k, spb must also be an integer itself
+    std::vector< std::complex<float> > positive; //cos(2*pi*f_c*(0:spb-1)/F_s)
+    std::vector< std::complex<float> > negative; //-cos(2*pi*f_c*(0:spb-1)/F_s)
 };
 
 
