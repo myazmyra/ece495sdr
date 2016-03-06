@@ -30,6 +30,7 @@
 # Miscellaneous
 *.txt
 *~
+.*~
 *.bry
 main_tx
 main_rx

@@ -19,4 +19,4 @@ main_rx: $(SOURCES_RX)
 .PHONY: clean
 
 clean:
-	rm -f *~ */*/*~ *.o */*/*.o main_tx main_rx
+	rm -f *~ .*~ */~ */.*~ */*/*~ */*/.*~ *.o */*/*.o main_tx main_rx
