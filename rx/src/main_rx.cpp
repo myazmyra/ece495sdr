@@ -49,6 +49,7 @@ int main(int argc, char** argv) {
 
     //maybe use enums later
     if(mode == std::string("local")) {
+        std::cout << std::endl; //aesthetic purposes
         receive_from_file(parameters_rx, bpsk_rx, packet_decoder);
     }
 
@@ -75,15 +76,15 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     std::cout << std::endl << std::endl;
     std::cout << "Successfully opened ouput file: " << output_filename << std::endl << std::endl;
 
-    size_t spb = parameters_rx->get_spb();
+    size_t spb_tx = parameters_rx->get_spb() * parameters_rx->get_decimation_factor();
     //vector to store all the buffer popinters
     std::vector< std::vector< std::complex<float> >* > buffers;
     //you will need to create new buffer each time you receive something...
     //...to be thread safe
     std::vector< std::complex<float> >* buff_ptr;
     while(true) {
-        buff_ptr = new std::vector< std::complex<float> >(spb);
-        infile.read((char*) &(buff_ptr->front()), spb * sizeof(std::complex<float>));
+        buff_ptr = new std::vector< std::complex<float> >(spb_tx);
+        infile.read((char*) &(buff_ptr->front()), spb_tx * sizeof(std::complex<float>));
         if(infile.eof()) break;
         buffers.push_back(buff_ptr);
     }
@@ -91,12 +92,17 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     std::vector<uint8_t> bits = bpsk_rx->receive_from_file(buffers);
     std::vector<uint8_t> bytes = packet_decoder->decode(bits);
 
+    for(auto b : bytes) {
+        outfile.write((char*) &b, sizeof(char));
+    }
+
      //delete all the allocated buffer pointers
      for(int i = 0; i < (int) buffers.size(); i++) {
          delete buffers[i];
      }
 
     std::cout << "Done receiving from input file: " << input_filename << std::endl << std::endl;
+    std::cout << "Done writing to output file: " << output_filename << std::endl << std::endl;
 
     infile.close();
     outfile.close();
