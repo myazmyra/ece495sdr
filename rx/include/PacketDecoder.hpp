@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #ifndef _Included_PacketDecoder
 #define _Included_PacketDecoder
@@ -10,6 +11,8 @@ class PacketDecoder {
     PacketDecoder();
     ~PacketDecoder();
     std::vector<uint8_t> decode(std::vector<uint8_t> bits);
+    std::vector<uint8_t> correlate(std::vector<uint8_t> x, std::vector<uint8_t> y);
+    std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> packets);
 
   private:
 
@@ -21,6 +24,13 @@ class PacketDecoder {
       int const packet_size; //total number of bytes in a packet
       uint8_t const LFSR_one; //first byte of 15 bit LFSR
       uint8_t const LFSR_two; //second byte of 15 bit LFSR padded with 0
+
+      int const num_packets; //number of packets to analyze in one call
+
+      std::vector<uint8_t> preamble_vector;
+
+      std::vector<uint8_t> previous;
+      std::vector<uint8_t> next;
 
 };
 

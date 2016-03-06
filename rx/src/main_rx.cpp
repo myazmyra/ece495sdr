@@ -13,7 +13,6 @@
 /***********************************************************************
  * Miscellaneous
  **********************************************************************/
-
 std::string mode = "";
 std::string input_filename = "";
 std::string output_filename = "";
@@ -23,7 +22,6 @@ std::mutex mtx;
 /***********************************************************************
  * Function Declarations
  **********************************************************************/
-
 int validate_input(int argc, char** argv);
 void print_help();
 void receive_from_file(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx,
