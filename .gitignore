@@ -32,6 +32,7 @@
 *~
 .*~
 *.bry
+!.gitignore
 main_tx
 main_rx
 
