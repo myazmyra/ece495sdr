@@ -1,5 +1,6 @@
 #include "Parameters_rx.hpp"
 #include "BPSK_rx.hpp"
+#include "PacketDecoder.hpp"
 
 #include <iostream>
 #include <cstdint>
@@ -25,7 +26,8 @@ std::mutex mtx;
 
 int validate_input(int argc, char** argv);
 void print_help();
-void receive_from_file(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx);
+void receive_from_file(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx,
+                       PacketDecoder* packet_decoder);
 
 int main(int argc, char** argv) {
 
@@ -41,9 +43,13 @@ int main(int argc, char** argv) {
                                    parameters_rx->get_spb(),
                                    parameters_rx->get_decimation_factor());
 
+    //probably better idea to set LFSR_one and LFSR_two and data_per_packet...
+    //...in Parameters_rx object
+    PacketDecoder* packet_decoder = new PacketDecoder();
+
     //maybe use enums later
     if(mode == std::string("local")) {
-        receive_from_file(parameters_rx, bpsk_rx);
+        receive_from_file(parameters_rx, bpsk_rx, packet_decoder);
     }
 
     std::cout << "Done!" << std::endl << std::endl;
@@ -51,7 +57,9 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-void receive_from_file(Parameters_rx* const parameters_rx, BPSK_rx* const bpsk_rx) {
+void receive_from_file(Parameters_rx* const parameters_rx,
+                       BPSK_rx* const bpsk_rx,
+                       PacketDecoder* packet_decoder) {
     std::ifstream infile(input_filename, std::ifstream::binary);
     std::ofstream outfile(output_filename, std::ofstream::binary);
 
@@ -70,7 +78,8 @@ void receive_from_file(Parameters_rx* const parameters_rx, BPSK_rx* const bpsk_r
     size_t spb = parameters_rx->get_spb();
     //vector to store all the buffer popinters
     std::vector< std::vector< std::complex<float> >* > buffers;
-    //you will need to create new buffer each time you receive something
+    //you will need to create new buffer each time you receive something...
+    //...to be thread safe
     std::vector< std::complex<float> >* buff_ptr;
     while(true) {
         buff_ptr = new std::vector< std::complex<float> >(spb);
@@ -80,6 +89,7 @@ void receive_from_file(Parameters_rx* const parameters_rx, BPSK_rx* const bpsk_r
     }
 
     std::vector<uint8_t> bits = bpsk_rx->receive_from_file(buffers);
+    std::vector<uint8_t> bytes = packet_decoder->decode(bits);
 
      //delete all the allocated buffer pointers
      for(int i = 0; i < (int) buffers.size(); i++) {

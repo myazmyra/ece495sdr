@@ -44,7 +44,7 @@ std::vector<uint8_t> BPSK_rx::receive_from_file(std::vector< std::vector< std::c
     std::vector<float> y = conv(downsampled, matched_filter);
     //obtain samples
     std::vector<uint8_t> bits;
-    for(int i = spb; i < (int) y.size(); i+= spb) {
+    for(int i = spb - 1; i < (int) y.size(); i+= spb) {
         bits.push_back(y[i] > 0 ? 1 : 0);
     }
     return bits;

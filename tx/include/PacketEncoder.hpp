@@ -14,6 +14,7 @@ class PacketEncoder {
 
   private:
 
+      static int const data_per_packet;
       static uint8_t const LFSR_one; //first byte of 15 bit LFSR
       static uint8_t const LFSR_two; //second byte of 15 bit LFSR padded with 0
 

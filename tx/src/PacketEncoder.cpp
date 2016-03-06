@@ -2,7 +2,7 @@
 
 //a packet will consist of:
 //2 bytes of preamble + 12 bytes of data + 2 bytes of checksum = 16 bytes
-const int data_per_packet = 12;
+const int PacketEncoder::data_per_packet = 12;
 const uint8_t PacketEncoder::LFSR_one = 30; //first byte of 15 bit LFSR
 const uint8_t PacketEncoder::LFSR_two = 178; //second byte of 15 bit LFSR padded with 0
 
