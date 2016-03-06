@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     Parameters_rx* parameters_rx = new Parameters_rx();
 
     BPSK_rx* bpsk_rx = new BPSK_rx(parameters_rx->get_sample_rate(),
-                                   parameters_rx->get_f_c(),
+                                   parameters_rx->get_f_IF(),
                                    parameters_rx->get_bit_rate(),
                                    parameters_rx->get_spb());
 
