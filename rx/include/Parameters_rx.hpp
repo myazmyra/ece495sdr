@@ -13,6 +13,7 @@ class Parameters_rx {
     double get_f_IF() const;
     size_t get_spb() const;
     double get_bit_rate() const;
+    int get_decimation_factor() const;
 
   private:
 

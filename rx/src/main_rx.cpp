@@ -38,7 +38,8 @@ int main(int argc, char** argv) {
     BPSK_rx* bpsk_rx = new BPSK_rx(parameters_rx->get_sample_rate(),
                                    parameters_rx->get_f_IF(),
                                    parameters_rx->get_bit_rate(),
-                                   parameters_rx->get_spb());
+                                   parameters_rx->get_spb(),
+                                   parameters_rx->get_decimation_factor());
 
     //maybe use enums later
     if(mode == std::string("local")) {
