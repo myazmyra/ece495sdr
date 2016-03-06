@@ -33,16 +33,19 @@ std::vector<float> BPSK_rx::conv(std::vector<float> x, std::vector<float> h) {
 }
 
 std::vector<uint8_t> BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers) {
-    std::vector< std::vector<float> > decimated_buffers(buffers.size());
+    //downsample and accumulate everything in one buffer, just like in Matlab
+    std::vector<float> downsampled(buffers.size() * spb);
     for(int i = 0; i < (int) buffers.size(); i++) {
-        decimated_buffers.push_back(std::vector<float>(spb));
         for(int j = 0; j < (int) buffers[i]->size(); j += decimation_factor) {
-            decimated_buffers[i].push_back(real(buffers[i]->at(j)));
+            downsampled.push_back(real(buffers[i]->at(j)));
         }
     }
-
-
-
+    //convolve
+    std::vector<float> y = conv(downsampled, matched_filter);
+    //obtain samples
     std::vector<uint8_t> bits;
+    for(int i = spb; i < (int) y.size(); i+= spb) {
+        bits.push_back(y[i] > 0 ? 1 : 0);
+    }
     return bits;
 }
