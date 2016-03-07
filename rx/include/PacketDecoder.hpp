@@ -13,6 +13,7 @@ class PacketDecoder {
     ~PacketDecoder();
     std::vector<uint8_t> decode(std::vector<int> bits);
     std::vector<int> correlate(std::vector<int> x, std::vector<int> y);
+    std::vector<uint8_t> packet_to_bytes(std::vector<int> pulses, int start_index);
     std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> packets);
 
   private:
@@ -26,12 +27,11 @@ class PacketDecoder {
       uint8_t const LFSR_one; //first byte of 15 bit LFSR
       uint8_t const LFSR_two; //second byte of 15 bit LFSR padded with 0
 
-      int const num_packets; //number of packets to analyze in one call
+      int const num_packets_per_call; //number of packets to analyze in one call
 
       std::vector<int> preamble_vector;
 
-      std::vector<uint8_t> previous;
-      std::vector<uint8_t> next;
+      std::vector<int> previous;
 
 };
 
