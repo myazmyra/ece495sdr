@@ -6,12 +6,13 @@
 #define _Included_PacketDecoder
 
 class PacketDecoder {
+
   public:
 
     PacketDecoder();
     ~PacketDecoder();
-    std::vector<uint8_t> decode(std::vector<uint8_t> bits);
-    std::vector<uint8_t> correlate(std::vector<uint8_t> x, std::vector<uint8_t> y);
+    std::vector<uint8_t> decode(std::vector<int> bits);
+    std::vector<int> correlate(std::vector<int> x, std::vector<int> y);
     std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> packets);
 
   private:
@@ -27,7 +28,7 @@ class PacketDecoder {
 
       int const num_packets; //number of packets to analyze in one call
 
-      std::vector<uint8_t> preamble_vector;
+      std::vector<int> preamble_vector;
 
       std::vector<uint8_t> previous;
       std::vector<uint8_t> next;

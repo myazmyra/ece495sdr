@@ -87,8 +87,8 @@ void receive_from_file(Parameters_rx* const parameters_rx,
         buffers.push_back(buff_ptr);
     }
 
-    std::vector<uint8_t> bits = bpsk_rx->receive_from_file(buffers);
-    std::vector<uint8_t> bytes = packet_decoder->decode(bits);
+    std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
+    std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
 
     for(auto b : bytes) {
         outfile.write((char*) &b, sizeof(char));

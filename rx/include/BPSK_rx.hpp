@@ -10,7 +10,7 @@ class BPSK_rx {
 
     BPSK_rx(double sample_rate, double f_IF, double bit_rate, size_t spb, int decimation_factor);
     ~BPSK_rx();
-    std::vector<uint8_t> receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers);
+    std::vector<int> receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers);
     std::vector<float> conv(std::vector<float> x, std::vector<float> h);
 
   private:

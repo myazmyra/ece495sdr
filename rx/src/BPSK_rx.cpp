@@ -32,7 +32,7 @@ std::vector<float> BPSK_rx::conv(std::vector<float> x, std::vector<float> h) {
     return y;
 }
 
-std::vector<uint8_t> BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers) {
+std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers) {
     //downsample and accumulate everything in one buffer, just like in Matlab
     std::vector<float> downsampled;
     for(int i = 0; i < (int) buffers.size(); i++) {
@@ -43,9 +43,9 @@ std::vector<uint8_t> BPSK_rx::receive_from_file(std::vector< std::vector< std::c
     //convolve
     std::vector<float> y = conv(downsampled, matched_filter);
     //obtain samples
-    std::vector<uint8_t> bits;
+    std::vector<int> pulses;
     for(int i = spb - 1; i < (int) downsampled.size(); i += spb) {
-        bits.push_back(y[i] > 0 ? 1 : 0);
+        pulses.push_back(y[i] > 0 ? 1 : -1);
     }
-    return bits;
+    return pulses;
 }
