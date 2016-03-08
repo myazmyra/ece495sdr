@@ -31,7 +31,7 @@ class PacketDecoder {
 
       std::vector<int> preamble_vector;
 
-      std::vector<int> previous;
+      std::vector<int> previous_pulses;
 
 };
 
