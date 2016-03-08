@@ -23,8 +23,8 @@ PacketDecoder::PacketDecoder() : preamble_size(2), data_size(12), checksum_size(
     for(int i = 0; i < (int) empty_packet_bits.size(); i++) {
         empty_packet_pulses[i] = empty_packet_bits[i] ? 1 : -1;
     }
-    preamble_vector.insert(preamble_vector.end(), empty_packet_bits.begin(), empty_packet_bits.end());
-    preamble_vector.insert(preamble_vector.end(), empty_packet_bits.begin(), empty_packet_bits.end());
+    preamble_vector.insert(preamble_vector.end(), empty_packet_pulses.begin(), empty_packet_pulses.end());
+    preamble_vector.insert(preamble_vector.end(), empty_packet_pulses.begin(), empty_packet_pulses.end());
 }
 
 PacketDecoder::~PacketDecoder() {
@@ -35,7 +35,6 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     std::vector<int> r = correlate(pulses, preamble_vector);
     //find start of the preamble by correlating witht the preamble_vector and then moding with 16 * 8 = 128
     int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) % (packet_size * 8);
-    std::cout << "Start Index: " << start_index << std::endl << std::endl;
 
     std::vector<uint8_t> bytes;
 
@@ -58,18 +57,17 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
 }
 
 std::vector<int> PacketDecoder::correlate(std::vector<int> x, std::vector<int> y) {
-    std::reverse(x.begin(), x.end());
     std::vector<int> r(x.size() + y.size() - 1);
     for(int i = 0; i < (int) r.size(); i++) {
-        int ii = i;
+        int ii = ((int) y.size()) - i - 1;
         int tmp = 0;
-        for(int j = 0; j < (int) y.size(); j++) {
-            if(ii >= 0 && ii < (int) x.size()) {
-                tmp += x[ii] * y[j];
+        for(int j = 0; j < (int) x.size(); j++) {
+            if(ii >= 0 && ii < (int) y.size()) {
+                tmp += y[ii] * x[j];
             }
-            ii--;
-            r[i] = tmp;
+            ii++;
         }
+        r[i] = tmp;
     }
     return r;
 }
