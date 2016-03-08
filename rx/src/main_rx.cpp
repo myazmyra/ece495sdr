@@ -80,24 +80,31 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     //you will need to create new buffer each time you receive something...
     //...to be thread safe
     std::vector< std::complex<float> >* buff_ptr;
+    int count = 0;
     while(true) {
         buff_ptr = new std::vector< std::complex<float> >(spb_tx);
         infile.read((char*) &(buff_ptr->front()), spb_tx * sizeof(std::complex<float>));
         if(infile.eof()) break;
         buffers.push_back(buff_ptr);
+        count++;
+        //the packet decoder reads three packets at a time, two guaranteed to exist. each packet is 128 bits (i.e. 128 reads from file)
+        if(count == 3 * 128) {
+            count = 0;
+            std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
+            std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
+            for(auto b : bytes) {
+                outfile.write((char*) &b, sizeof(char));
+            }
+            //delete all the allocated buffer pointers
+            for(int i = 0; i < (int) buffers.size(); i++) {
+                delete buffers[i];
+            }
+            buffers.clear();
+        }
     }
 
-    std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
-    std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
-
-    for(auto b : bytes) {
-        outfile.write((char*) &b, sizeof(char));
-    }
-
-     //delete all the allocated buffer pointers
-     for(int i = 0; i < (int) buffers.size(); i++) {
-         delete buffers[i];
-     }
+    //if packet wasnt completed to 3, generate random vectors and decode
+    //like the usrp would do
 
     std::cout << "Done receiving from input file: " << input_filename << std::endl << std::endl;
     std::cout << "Done writing to output file: " << output_filename << std::endl << std::endl;

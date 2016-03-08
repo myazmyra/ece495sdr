@@ -44,7 +44,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     bytes.insert(bytes.end(), previous_packet.begin(), previous_packet.end());
 
     previous_pulses.clear();
-    previous_pulses.insert(previous_pulses.end(), pulses.begin() + start_index * packet_size * (num_packets_per_call - 1) * 8, pulses.end());
+    previous_pulses.insert(previous_pulses.end(), pulses.begin() + start_index + packet_size * (num_packets_per_call - 1) * 8, pulses.end());
 
     //decode the two guaranteed packets to exist
     std::vector<uint8_t> first_packet = packet_to_bytes(pulses, start_index);
@@ -52,6 +52,13 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
 
     bytes.insert(bytes.end(), first_packet.begin(), first_packet.end());
     bytes.insert(bytes.end(), second_packet.begin(), second_packet.end());
+
+    if(((int) previous_pulses.size()) == packet_size * 8) {
+        //means full packet is formed
+        std::vector<uint8_t> previous_packet = packet_to_bytes(previous_pulses, 0);
+        bytes.insert(bytes.end(), previous_packet.begin(), previous_packet.end());
+        previous_pulses.clear();
+    }
 
     return bytes;
 }
