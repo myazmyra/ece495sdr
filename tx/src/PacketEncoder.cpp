@@ -14,8 +14,10 @@ std::vector<uint8_t> PacketEncoder::form_packets(char* data, int size) {
         throw new std::runtime_error("Number of data bytes in a packet is not even");
     }
 
+    //first, encode how many bytes are there in total
+    
+
     int num_packets = size / data_per_packet;
-    std::cout << "num_packets: " << num_packets << std::endl;
 
     std::vector<uint8_t> packets;
     for(int i = 0; i < num_packets; i++) {
@@ -47,8 +49,6 @@ std::vector<uint8_t> PacketEncoder::form_packets(char* data, int size) {
         return bytes_to_bits(packets);
     }
 
-    std::cout << "remaining_bytes: " << remaining_bytes << std::endl << std::endl;
-
     //pad anything leftover
     packets.push_back(LFSR_one);
     packets.push_back(LFSR_two);
@@ -62,12 +62,9 @@ std::vector<uint8_t> PacketEncoder::form_packets(char* data, int size) {
     for(int i = num_packets * data_per_packet; i < num_packets * data_per_packet + remaining_bytes; i++) {
         count++;
         uint8_t byte = (uint8_t) data[i];
-        std::cout << "char: " << (char) byte << std::endl;
         if(count <= data_per_packet / 2) {
-            std::cout << "hey" << std::endl;
             checksum1 ^= byte;
         } else {
-            std::cout << "there" << std::endl;
             checksum2 ^= byte;
         }
         packets.push_back(byte);
@@ -75,7 +72,6 @@ std::vector<uint8_t> PacketEncoder::form_packets(char* data, int size) {
     //second part
     //pad zeros
     int num_padded_zeros = data_per_packet - remaining_bytes;
-    std::cout << "num_padded_zeros: " << num_padded_zeros << std::endl << std::endl;
     for(int i = 0; i < num_padded_zeros; i++) {
         packets.push_back(0);
     }

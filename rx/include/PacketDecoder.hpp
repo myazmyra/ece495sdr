@@ -33,6 +33,7 @@ class PacketDecoder {
 
       std::vector<int> preamble_vector;
 
+      size_t total_data_size;
       std::vector<int> previous_pulses;
 
 };

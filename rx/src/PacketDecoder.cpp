@@ -4,7 +4,7 @@ PacketDecoder::PacketDecoder() : preamble_size(2), data_size(12), checksum_size(
                                  packet_size(preamble_size + data_size + checksum_size),
                                  LFSR_one(30), LFSR_two(178), num_packets_per_call(2) {
     //form one vector with just preamble in it (all other bytes are zero),...
-    //...then use it to construct two vectors
+    //...then use it to construct num_packets_per_call vectors
     std::vector<uint8_t> empty_packet;
     //push two preamble bytes
     empty_packet.push_back(LFSR_one);
@@ -16,7 +16,7 @@ PacketDecoder::PacketDecoder() : preamble_size(2), data_size(12), checksum_size(
     //push two checksum bytes (all ZEROS)
     empty_packet.push_back(0);
     empty_packet.push_back(0);
-    //create an no-data bit packet
+    //create a no-data bit packet
     std::vector<uint8_t> empty_packet_bits = bytes_to_bits(empty_packet);
     std::vector<int> empty_packet_pulses(empty_packet_bits.size());
     for(int i = 0; i < (int) empty_packet_bits.size(); i++) {
@@ -25,6 +25,7 @@ PacketDecoder::PacketDecoder() : preamble_size(2), data_size(12), checksum_size(
     for(int i = 0; i < num_packets_per_call; i++) {
         preamble_vector.insert(preamble_vector.end(), empty_packet_pulses.begin(), empty_packet_pulses.end());
     }
+    total_data_size = 0;
 }
 
 PacketDecoder::~PacketDecoder() {
@@ -35,7 +36,6 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     std::vector<int> r = correlate(pulses, preamble_vector);
     //find start of the preamble by correlating witht the preamble_vector and then moding with 16 * 8 = 128
     int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) % (packet_size * 8);
-    std::cout << "start_index: " << start_index << std::endl << std::endl;
 
     std::vector<uint8_t> bytes;
 
@@ -51,7 +51,6 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     //it will fail to form in case of very low SNR, no transmission of packets, etc.
     //because preamble correlator will detect wrong start of the packet (obviously)
     if((int) new_size != packet_size * 8) {
-        std::cout << "whaat: " << (int) new_size << std::endl << std::endl;
         previous_pulses.clear();
     }
     previous_pulses.insert(previous_pulses.end(), pulses.begin() + start_index + packet_size * (num_packets_per_call - 1) * 8, pulses.end());

@@ -109,7 +109,6 @@ void receive_from_file(Parameters_rx* const parameters_rx,
         throw new std::runtime_error("Something went wrong with junk packet adding");
     }
     rand_noise_generator(buffers, n_rand_packets, packet_size, spb_tx);
-    std::cout << "buffers.size(): " << buffers.size() << std::endl << std::endl;
     while(true) {
         buff_ptr = new std::vector< std::complex<float> >(spb_tx);
         infile.read((char*) &(buff_ptr->front()), spb_tx * sizeof(std::complex<float>));
@@ -134,7 +133,6 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     //if packet wasnt completed to 3, generate random vectors and decode
     //like the usrp would do
     int n_packets_remaining = buffers.size() / (packet_size * 8);
-    std::cout << "n_packets_remaining: " << n_packets_remaining << std::endl;
     //add rand packets to complete the buffer to three packets
     if(n_packets_remaining != 0) {
         rand_noise_generator(buffers, num_packets_per_call - n_packets_remaining, packet_size, spb_tx);
