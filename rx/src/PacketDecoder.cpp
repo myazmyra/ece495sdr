@@ -22,7 +22,7 @@ PacketDecoder::PacketDecoder() : preamble_size(2), data_size(12), checksum_size(
     for(int i = 0; i < (int) empty_packet_bits.size(); i++) {
         empty_packet_pulses[i] = empty_packet_bits[i] ? 1 : -1;
     }
-    for(int i = 0; i < num_packets_per_call - 1; i++) {
+    for(int i = 0; i < num_packets_per_call; i++) {
         preamble_vector.insert(preamble_vector.end(), empty_packet_pulses.begin(), empty_packet_pulses.end());
     }
 }
