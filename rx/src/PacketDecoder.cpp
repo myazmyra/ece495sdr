@@ -2,7 +2,7 @@
 
 PacketDecoder::PacketDecoder() : preamble_size(2), data_size(12), checksum_size(2),
                                  packet_size(preamble_size + data_size + checksum_size),
-                                 LFSR_one(30), LFSR_two(178), num_packets_per_call(3) {
+                                 LFSR_one(30), LFSR_two(178), num_packets_per_call(2) {
     //form one vector with just preamble in it (all other bytes are zero),...
     //...then use it to construct two vectors
     std::vector<uint8_t> empty_packet;
@@ -18,13 +18,13 @@ PacketDecoder::PacketDecoder() : preamble_size(2), data_size(12), checksum_size(
     empty_packet.push_back(0);
     //create an no-data bit packet
     std::vector<uint8_t> empty_packet_bits = bytes_to_bits(empty_packet);
-    //concatenate it two times to form preamble detection vector
     std::vector<int> empty_packet_pulses(empty_packet_bits.size());
     for(int i = 0; i < (int) empty_packet_bits.size(); i++) {
         empty_packet_pulses[i] = empty_packet_bits[i] ? 1 : -1;
     }
-    preamble_vector.insert(preamble_vector.end(), empty_packet_pulses.begin(), empty_packet_pulses.end());
-    preamble_vector.insert(preamble_vector.end(), empty_packet_pulses.begin(), empty_packet_pulses.end());
+    for(int i = 0; i < num_packets_per_call - 1; i++) {
+        preamble_vector.insert(preamble_vector.end(), empty_packet_pulses.begin(), empty_packet_pulses.end());
+    }
 }
 
 PacketDecoder::~PacketDecoder() {
@@ -35,7 +35,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     std::vector<int> r = correlate(pulses, preamble_vector);
     //find start of the preamble by correlating witht the preamble_vector and then moding with 16 * 8 = 128
     int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) % (packet_size * 8);
-    std::cout << "start_index: " << start_index << std::endl;
+    std::cout << "start_index: " << start_index << std::endl << std::endl;
 
     std::vector<uint8_t> bytes;
 
@@ -51,17 +51,16 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     //it will fail to form in case of very low SNR, no transmission of packets, etc.
     //because preamble correlator will detect wrong start of the packet (obviously)
     if((int) new_size != packet_size * 8) {
-        std::cout << "shit: " << new_size << std::endl;
+        std::cout << "whaat: " << (int) new_size << std::endl << std::endl;
         previous_pulses.clear();
     }
     previous_pulses.insert(previous_pulses.end(), pulses.begin() + start_index + packet_size * (num_packets_per_call - 1) * 8, pulses.end());
 
-    //decode the two guaranteed packets to exist
-    std::vector<uint8_t> first_packet = packet_to_bytes(pulses, start_index);
-    std::vector<uint8_t> second_packet = packet_to_bytes(pulses, start_index + packet_size * 8);
-
-    bytes.insert(bytes.end(), first_packet.begin(), first_packet.end());
-    bytes.insert(bytes.end(), second_packet.begin(), second_packet.end());
+    //decode the num_packets_per_call-1 guaranteed packets to exist
+    for(int i = 0; i < num_packets_per_call - 1; i++) {
+        std::vector<uint8_t> data = packet_to_bytes(pulses, start_index + i * (packet_size * 8));
+        bytes.insert(bytes.end(), data.begin(), data.end());
+    }
 
     if(((int) previous_pulses.size()) == packet_size * 8) {
         //means full packet is formed
@@ -134,9 +133,6 @@ std::vector<uint8_t> PacketDecoder::packet_to_bytes(std::vector<int> pulses, int
         checksum2 ^= bytes[i];
     }
     if((checksum1 != 0) || (checksum2 != 0)) {
-        std::cout << "Eerr" << std::endl << std::endl;
-        std::cout << "checksum1: " << (int) checksum1 << std::endl;
-        std::cout << "checksum2: " << (int) checksum2 << std::endl;
         std::vector<uint8_t> empty_bytes;
         return empty_bytes;
     }

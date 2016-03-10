@@ -88,7 +88,7 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     //...to be thread safe
     std::vector< std::complex<float> >* buff_ptr;
     //add bunch of junk to test packet decoder
-    int n_rand_packets = 0, count = n_rand_packets / num_packets_per_call;
+    int n_rand_packets = 19, count = n_rand_packets / num_packets_per_call;
     for(int i = 0; i < count; i++) {
         rand_noise_generator(buffers, num_packets_per_call, packet_size, spb_tx);
         std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
@@ -109,12 +109,14 @@ void receive_from_file(Parameters_rx* const parameters_rx,
         throw new std::runtime_error("Something went wrong with junk packet adding");
     }
     rand_noise_generator(buffers, n_rand_packets, packet_size, spb_tx);
+    std::cout << "buffers.size(): " << buffers.size() << std::endl << std::endl;
     while(true) {
         buff_ptr = new std::vector< std::complex<float> >(spb_tx);
         infile.read((char*) &(buff_ptr->front()), spb_tx * sizeof(std::complex<float>));
         if(infile.eof()) break;
         buffers.push_back(buff_ptr);
-        //the packet decoder reads three packets at a time, two guaranteed to exist. each packet is 128 bits (i.e. 128 reads from file)
+        //the packet decoder reads num_packets_per_call packets at a time,
+        //num_packets_per_call-1 guaranteed to exist. each packet is 128 bits (i.e. 128 reads from file)
         if((int) buffers.size() == num_packets_per_call * packet_size * 8) {
             std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
             std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
@@ -131,15 +133,16 @@ void receive_from_file(Parameters_rx* const parameters_rx,
 
     //if packet wasnt completed to 3, generate random vectors and decode
     //like the usrp would do
-    std::cout << "nbuffers.size(): " << buffers.size() << std::endl;
     int n_packets_remaining = buffers.size() / (packet_size * 8);
-    std::cout << "n_packets_remaining: " << n_packets_remaining << std::endl << std::endl;
+    std::cout << "n_packets_remaining: " << n_packets_remaining << std::endl;
     //add rand packets to complete the buffer to three packets
-    rand_noise_generator(buffers, num_packets_per_call - n_packets_remaining, packet_size, spb_tx);
-    std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
-    std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
-    for(auto b : bytes) {
-        outfile.write((char*) &b, sizeof(char));
+    if(n_packets_remaining != 0) {
+        rand_noise_generator(buffers, num_packets_per_call - n_packets_remaining, packet_size, spb_tx);
+        std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
+        std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
+        for(auto b : bytes) {
+            outfile.write((char*) &b, sizeof(char));
+        }
     }
     //delete all the allocated buffer pointers
     for(int i = 0; i < (int) buffers.size(); i++) {
