@@ -1,15 +1,17 @@
 #include "Parameters_rx.hpp"
 
-Parameters_rx::Parameters_rx() : decimation_factor(50),
+Parameters_rx::Parameters_rx() : f_c_tx(4e6), decimation_factor(40),
                                  sample_rate(12.5e6 / decimation_factor),
-                                 f_IF(sample_rate / 5) {
+                                 f_IF(fmod(sample_rate - fmod(f_c_tx, sample_rate), sample_rate)) {
 
     //explanation: sample_rate on the TX side is 12.5e6
     //need a sample rate which is even divisor of 100e6
-    //need a decimation factor (50) to be a divisor of 8000
-    //thus: sample rate is 12.5e6 / 50
+    //need a decimation factor (40) to be a divisor of 8000
+    //thus: sample rate is 12.5e6 / 40
+    //f_IF = 62.5 kHz with default configurations
 
-    spb = 8000 / decimation_factor;
+    spb_tx = 8000;
+    spb = spb_tx / decimation_factor;
     bit_rate = sample_rate / spb; //sample_rate / spb
 
 }
@@ -36,4 +38,8 @@ double Parameters_rx::get_bit_rate() const {
 
 int Parameters_rx::get_decimation_factor() const {
     return decimation_factor;
+}
+
+size_t Parameters_rx::get_spb_tx() const {
+    return spb_tx;
 }

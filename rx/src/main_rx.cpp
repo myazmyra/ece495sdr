@@ -26,6 +26,9 @@ int validate_input(int argc, char** argv);
 void print_help();
 void receive_from_file(Parameters_rx* parameters_rx, BPSK_rx* bpsk_rx,
                        PacketDecoder* packet_decoder);
+inline float rand_float(float a, float b);
+void rand_noise_generator(std::vector< std::vector< std::complex<float> >* >& buffers,
+                          int n_packets, int packet_size, size_t spb);
 
 int main(int argc, char** argv) {
 
@@ -74,22 +77,40 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     std::cout << std::endl << std::endl;
     std::cout << "Successfully opened ouput file: " << output_filename << std::endl << std::endl;
 
-    size_t spb_tx = parameters_rx->get_spb() * parameters_rx->get_decimation_factor();
+    size_t spb_tx = parameters_rx->get_spb_tx();
+    //all of the below parameters should be in parameters_rx and not in packet_decoder
+    //pass it to the packet decoder via constructor
+    int packet_size = packet_decoder->get_packet_size();
+    int num_packets_per_call = packet_decoder->get_num_packets_per_call();
     //vector to store all the buffer popinters
     std::vector< std::vector< std::complex<float> >* > buffers;
     //you will need to create new buffer each time you receive something...
     //...to be thread safe
     std::vector< std::complex<float> >* buff_ptr;
-    int count = 0;
+    //add bunch of junk to test packet decoder
+    int n_rand_packets = 2;
+    for(int i = 0; i < n_rand_packets / num_packets_per_call; i +=  num_packets_per_call) {
+        rand_noise_generator(buffers, num_packets_per_call, packet_size, spb_tx);
+        std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
+        std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
+        for(auto b : bytes) {
+            outfile.write((char*) &b, sizeof(char));
+        }
+        //delete all the allocated buffer pointers
+        for(int i = 0; i < (int) buffers.size(); i++) {
+            delete buffers[i];
+        }
+        buffers.clear();
+        n_rand_packets -= num_packets_per_call;
+    }
+    rand_noise_generator(buffers, n_rand_packets, packet_size, spb_tx);
     while(true) {
         buff_ptr = new std::vector< std::complex<float> >(spb_tx);
         infile.read((char*) &(buff_ptr->front()), spb_tx * sizeof(std::complex<float>));
         if(infile.eof()) break;
         buffers.push_back(buff_ptr);
-        count++;
         //the packet decoder reads three packets at a time, two guaranteed to exist. each packet is 128 bits (i.e. 128 reads from file)
-        if(count == 3 * 128) {
-            count = 0;
+        if((int) buffers.size() == num_packets_per_call * packet_size * 8) {
             std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
             std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
             for(auto b : bytes) {
@@ -101,6 +122,19 @@ void receive_from_file(Parameters_rx* const parameters_rx,
             }
             buffers.clear();
         }
+    }
+
+    int n_packets_remaining = num_packets_per_call - buffers.size() / (num_packets_per_call * packet_size * 8);
+    //add rand packets to complete the buffer to three packets
+    rand_noise_generator(buffers, n_packets_remaining, packet_size, spb_tx);
+    std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
+    std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
+    for(auto b : bytes) {
+        outfile.write((char*) &b, sizeof(char));
+    }
+    //delete all the allocated buffer pointers
+    for(int i = 0; i < (int) buffers.size(); i++) {
+        delete buffers[i];
     }
 
     //if packet wasnt completed to 3, generate random vectors and decode
@@ -145,4 +179,24 @@ int validate_input(int argc, char** argv) {
         }
     }
     return 1;
+}
+
+inline float rand_float(float a, float b) {
+    float random = ((float) std::rand()) / ((float) RAND_MAX);
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+}
+
+void rand_noise_generator(std::vector< std::vector< std::complex<float> >* >& buffers, int n_packets, int packet_size, size_t spb) {
+    float a = 1.0, b = -1.0;
+    for(int i = 0; i < n_packets; i++) {
+        for(int j = 0; j < packet_size * 8; j++) {
+            std::vector< std::complex<float> >* buff_ptr = new std::vector< std::complex<float> >(spb);
+            for(int k = 0; k < (int) spb; k++) {
+                (*buff_ptr)[k] = rand_float(a, b);
+            }
+            buffers.push_back(buff_ptr);
+        }
+    }
 }
