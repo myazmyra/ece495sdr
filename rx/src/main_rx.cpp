@@ -88,8 +88,8 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     //...to be thread safe
     std::vector< std::complex<float> >* buff_ptr;
     //add bunch of junk to test packet decoder
-    int n_rand_packets = 2;
-    for(int i = 0; i < n_rand_packets / num_packets_per_call; i +=  num_packets_per_call) {
+    int n_rand_packets = 19, count = n_rand_packets / num_packets_per_call;
+    for(int i = 0; i < count; i++) {
         rand_noise_generator(buffers, num_packets_per_call, packet_size, spb_tx);
         std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
         std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
@@ -97,11 +97,16 @@ void receive_from_file(Parameters_rx* const parameters_rx,
             outfile.write((char*) &b, sizeof(char));
         }
         //delete all the allocated buffer pointers
-        for(int i = 0; i < (int) buffers.size(); i++) {
-            delete buffers[i];
+        for(int j = 0; j < (int) buffers.size(); j++) {
+            delete buffers[j];
         }
         buffers.clear();
         n_rand_packets -= num_packets_per_call;
+    }
+    //check if the buffers have the right size (i.e. less than 3 packets)
+    if(n_rand_packets > 2 || (int) buffers.size() >= num_packets_per_call * packet_size * 8) {
+        std::cout << "Something went wrong with junk packet adding" << std::endl << std::endl;
+        throw new std::runtime_error("Something went wrong with junk packet adding");
     }
     rand_noise_generator(buffers, n_rand_packets, packet_size, spb_tx);
     while(true) {
@@ -136,6 +141,7 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     for(int i = 0; i < (int) buffers.size(); i++) {
         delete buffers[i];
     }
+    buffers.clear();
 
     //if packet wasnt completed to 3, generate random vectors and decode
     //like the usrp would do
