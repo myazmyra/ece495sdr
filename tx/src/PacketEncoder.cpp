@@ -9,7 +9,13 @@ const uint8_t PacketEncoder::LFSR_two = 178; //second byte of 15 bit LFSR padded
 
 std::vector<uint8_t> PacketEncoder::form_packets(char* data, int size) {
 
+    if(data_per_packet % 2 != 0) {
+        std::cout << "Number of data bytes in a packet is not even" << std::endl << std::endl;
+        throw new std::runtime_error("Number of data bytes in a packet is not even");
+    }
+
     int num_packets = size / data_per_packet;
+    std::cout << "num_packets: " << num_packets << std::endl;
 
     std::vector<uint8_t> packets;
     for(int i = 0; i < num_packets; i++) {
@@ -41,26 +47,35 @@ std::vector<uint8_t> PacketEncoder::form_packets(char* data, int size) {
         return bytes_to_bits(packets);
     }
 
+    std::cout << "remaining_bytes: " << remaining_bytes << std::endl << std::endl;
+
     //pad anything leftover
     packets.push_back(LFSR_one);
     packets.push_back(LFSR_two);
 
+    //count number of bytes added, could be calculated from the loop index...
+    //...but code would become even uglier
+    int count = 0;
     //first part
     uint8_t checksum1 = 0;
-    for(int i = num_packets; i < num_packets + remaining_bytes / 2; i++) {
+    uint8_t checksum2 = 0;
+    for(int i = num_packets * data_per_packet; i < num_packets * data_per_packet + remaining_bytes; i++) {
+        count++;
         uint8_t byte = (uint8_t) data[i];
-        checksum1 ^= byte;
+        std::cout << "char: " << (char) byte << std::endl;
+        if(count <= data_per_packet / 2) {
+            std::cout << "hey" << std::endl;
+            checksum1 ^= byte;
+        } else {
+            std::cout << "there" << std::endl;
+            checksum2 ^= byte;
+        }
         packets.push_back(byte);
     }
     //second part
-    uint8_t checksum2 = 0;
-    for(int i = num_packets + remaining_bytes / 2; i < num_packets + remaining_bytes; i++) {
-        uint8_t byte = (uint8_t) data[i];
-        checksum2 ^= byte;
-        packets.push_back(byte);
-    }
     //pad zeros
     int num_padded_zeros = data_per_packet - remaining_bytes;
+    std::cout << "num_padded_zeros: " << num_padded_zeros << std::endl << std::endl;
     for(int i = 0; i < num_padded_zeros; i++) {
         packets.push_back(0);
     }

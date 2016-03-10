@@ -1,5 +1,6 @@
 #include <iostream>
 #include <math.h>
+#include <stdexcept>
 
 #ifndef _Included_Parameters_rx
 #define _Included_Parameters_rx

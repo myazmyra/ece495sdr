@@ -88,7 +88,7 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     //...to be thread safe
     std::vector< std::complex<float> >* buff_ptr;
     //add bunch of junk to test packet decoder
-    int n_rand_packets = 19, count = n_rand_packets / num_packets_per_call;
+    int n_rand_packets = 0, count = n_rand_packets / num_packets_per_call;
     for(int i = 0; i < count; i++) {
         rand_noise_generator(buffers, num_packets_per_call, packet_size, spb_tx);
         std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
@@ -129,9 +129,13 @@ void receive_from_file(Parameters_rx* const parameters_rx,
         }
     }
 
-    int n_packets_remaining = num_packets_per_call - buffers.size() / (num_packets_per_call * packet_size * 8);
+    //if packet wasnt completed to 3, generate random vectors and decode
+    //like the usrp would do
+    std::cout << "nbuffers.size(): " << buffers.size() << std::endl;
+    int n_packets_remaining = buffers.size() / (packet_size * 8);
+    std::cout << "n_packets_remaining: " << n_packets_remaining << std::endl << std::endl;
     //add rand packets to complete the buffer to three packets
-    rand_noise_generator(buffers, n_packets_remaining, packet_size, spb_tx);
+    rand_noise_generator(buffers, num_packets_per_call - n_packets_remaining, packet_size, spb_tx);
     std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
     std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
     for(auto b : bytes) {
@@ -142,9 +146,6 @@ void receive_from_file(Parameters_rx* const parameters_rx,
         delete buffers[i];
     }
     buffers.clear();
-
-    //if packet wasnt completed to 3, generate random vectors and decode
-    //like the usrp would do
 
     std::cout << "Done receiving from input file: " << input_filename << std::endl << std::endl;
     std::cout << "Done writing to output file: " << output_filename << std::endl << std::endl;

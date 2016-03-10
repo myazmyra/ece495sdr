@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdint>
 #include <vector>
+#include <stdexcept>
 
 #ifndef _Included_PacketEncoder
 #define _Included_PacketEncoder

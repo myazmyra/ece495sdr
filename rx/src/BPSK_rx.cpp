@@ -33,6 +33,10 @@ std::vector<float> BPSK_rx::conv(std::vector<float> x, std::vector<float> h) {
 }
 
 std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers) {
+    if(buffers.size() == 0) {
+        std::cout << "Buffers size should never be ZERO" << std::endl << std::endl;
+        throw new std::runtime_error("Buffers size should never be ZERO");
+    }
     //downsample and accumulate everything in one buffer, just like in Matlab
     std::vector<float> downsampled;
     for(int i = 0; i < (int) buffers.size(); i++) {

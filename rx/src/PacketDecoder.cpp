@@ -35,6 +35,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     std::vector<int> r = correlate(pulses, preamble_vector);
     //find start of the preamble by correlating witht the preamble_vector and then moding with 16 * 8 = 128
     int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) % (packet_size * 8);
+    std::cout << "start_index: " << start_index << std::endl;
 
     std::vector<uint8_t> bytes;
 
@@ -50,6 +51,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     //it will fail to form in case of very low SNR, no transmission of packets, etc.
     //because preamble correlator will detect wrong start of the packet (obviously)
     if((int) new_size != packet_size * 8) {
+        std::cout << "shit: " << new_size << std::endl;
         previous_pulses.clear();
     }
     previous_pulses.insert(previous_pulses.end(), pulses.begin() + start_index + packet_size * (num_packets_per_call - 1) * 8, pulses.end());
@@ -132,6 +134,9 @@ std::vector<uint8_t> PacketDecoder::packet_to_bytes(std::vector<int> pulses, int
         checksum2 ^= bytes[i];
     }
     if((checksum1 != 0) || (checksum2 != 0)) {
+        std::cout << "Eerr" << std::endl << std::endl;
+        std::cout << "checksum1: " << (int) checksum1 << std::endl;
+        std::cout << "checksum2: " << (int) checksum2 << std::endl;
         std::vector<uint8_t> empty_bytes;
         return empty_bytes;
     }
