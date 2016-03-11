@@ -14,8 +14,7 @@ std::vector<uint8_t> PacketEncoder::form_packets(char* data, int size) {
         throw new std::runtime_error("Number of data bytes in a packet is not even");
     }
 
-    //first, encode how many bytes are there in total
-    
+    //TODO: first, encode how many bytes are there in total
 
     int num_packets = size / data_per_packet;
 

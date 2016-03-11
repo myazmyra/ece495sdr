@@ -1,6 +1,6 @@
 #include "Parameters_rx.hpp"
 
-Parameters_rx::Parameters_rx() : f_c_tx(4e6), decimation_factor(40),
+Parameters_rx::Parameters_rx() : f_c_tx(4e6), decimation_factor(100),
                                  sample_rate(12.5e6 / decimation_factor),
                                  f_IF(fmod(sample_rate - fmod(f_c_tx, sample_rate), sample_rate)) {
 
