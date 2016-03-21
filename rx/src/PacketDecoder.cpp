@@ -42,7 +42,7 @@ PacketDecoder::~PacketDecoder() {
 std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     std::vector<int> r = correlate(pulses, preamble_vector);
     //find start of the preamble by correlating witht the preamble_vector and then moding with 16 * 8 = 128
-    int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) % (preamble_vector.size());
+    int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) - ((int) preamble_vector.size());
 
     std::vector<uint8_t> bytes;
 
