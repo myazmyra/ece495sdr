@@ -6,6 +6,7 @@ PacketDecoder::PacketDecoder() : preamble_size(2), data_size(12), checksum_size(
     //form one vector with just preamble in it (all other bytes are zero),...
     //...then use it to construct num_packets_per_call vectors
     std::vector<uint8_t> empty_packet;
+    /*
     //push two preamble bytes
     empty_packet.push_back(LFSR_one);
     empty_packet.push_back(LFSR_two);
@@ -25,7 +26,13 @@ PacketDecoder::PacketDecoder() : preamble_size(2), data_size(12), checksum_size(
     for(int i = 0; i < num_packets_per_call; i++) {
         preamble_vector.insert(preamble_vector.end(), empty_packet_pulses.begin(), empty_packet_pulses.end());
     }
-    total_data_size = 0;
+    */
+    empty_packet.push_back(LFSR_one);
+    empty_packet.push_back(LFSR_two);
+    std::vector<uint8_t> empty_packet_bits = bytes_to_bits(empty_packet);
+    for(int i = 0; i < (int) empty_packet_bits.size(); i++) {
+        preamble_vector.push_back(empty_packet_bits[i] ? 1 : -1);
+    }
 }
 
 PacketDecoder::~PacketDecoder() {
@@ -35,7 +42,7 @@ PacketDecoder::~PacketDecoder() {
 std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     std::vector<int> r = correlate(pulses, preamble_vector);
     //find start of the preamble by correlating witht the preamble_vector and then moding with 16 * 8 = 128
-    int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) % (packet_size * 8);
+    int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) % (preamble_vector.size());
 
     std::vector<uint8_t> bytes;
 

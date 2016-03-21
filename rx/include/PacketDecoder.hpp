@@ -32,8 +32,6 @@ class PacketDecoder {
       int const num_packets_per_call; //number of packets to analyze in one call
 
       std::vector<int> preamble_vector;
-
-      size_t total_data_size;
       std::vector<int> previous_pulses;
 
 };
