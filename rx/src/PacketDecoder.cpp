@@ -6,27 +6,6 @@ PacketDecoder::PacketDecoder() : preamble_size(2), data_size(12), checksum_size(
     //form one vector with just preamble in it (all other bytes are zero),...
     //...then use it to construct num_packets_per_call vectors
     std::vector<uint8_t> empty_packet;
-    /*
-    //push two preamble bytes
-    empty_packet.push_back(LFSR_one);
-    empty_packet.push_back(LFSR_two);
-    //push 12 data bytes (all ZEROS)
-    for(int i = 0; i < data_size; i++) {
-        empty_packet.push_back(0);
-    }
-    //push two checksum bytes (all ZEROS)
-    empty_packet.push_back(0);
-    empty_packet.push_back(0);
-    //create a no-data bit packet
-    std::vector<uint8_t> empty_packet_bits = bytes_to_bits(empty_packet);
-    std::vector<int> empty_packet_pulses(empty_packet_bits.size());
-    for(int i = 0; i < (int) empty_packet_bits.size(); i++) {
-        empty_packet_pulses[i] = empty_packet_bits[i] ? 1 : -1;
-    }
-    for(int i = 0; i < num_packets_per_call; i++) {
-        preamble_vector.insert(preamble_vector.end(), empty_packet_pulses.begin(), empty_packet_pulses.end());
-    }
-    */
     empty_packet.push_back(LFSR_one);
     empty_packet.push_back(LFSR_two);
     std::vector<uint8_t> empty_packet_bits = bytes_to_bits(empty_packet);
@@ -77,6 +56,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
         bytes.insert(bytes.end(), previous_packet.begin(), previous_packet.end());
         previous_pulses.clear();
     }
+
     return bytes;
 }
 

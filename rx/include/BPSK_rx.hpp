@@ -24,6 +24,12 @@ class BPSK_rx {
     std::vector<float> mixer_IF;
     std::vector<float> matched_filter;
 
+    int recompute_period;
+    int start_index;
+    int n_bits_received;
+
+    int downsample_factor;
+
 };
 
 #endif
