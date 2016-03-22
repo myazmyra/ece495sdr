@@ -42,25 +42,26 @@ PacketDecoder::~PacketDecoder() {
 std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     std::vector<int> r = correlate(pulses, preamble_vector);
     //find start of the preamble by correlating witht the preamble_vector and then moding with 16 * 8 = 128
-    int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) - ((int) preamble_vector.size());
+    int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) -
+                      ((int) preamble_vector.size());
+
+    //due to subtraction, start_index might be zero for noise, which will terminate the program
+    start_index = start_index >= 0 ? start_index : start_index + (int) preamble_vector.size();
+    start_index %= packet_size * 8;
 
     std::vector<uint8_t> bytes;
 
     //decode stuff from previous buffer first
-    previous_pulses.insert(previous_pulses.end(), pulses.begin(), pulses.begin() + start_index);
-    std::vector<uint8_t> previous_packet = packet_to_bytes(previous_pulses, 0);
-    bytes.insert(bytes.end(), previous_packet.begin(), previous_packet.end());
-
-    previous_pulses.clear();
-    size_t new_size = previous_pulses.size() + (size_t) (pulses.end() -
-                      (pulses.begin() + start_index + packet_size * (num_packets_per_call - 1) * 8));
+    size_t new_size = previous_pulses.size() + (size_t) start_index;
     //need to check if a previous packet is fully formed
     //it will fail to form in case of very low SNR, no transmission of packets, etc.
     //because preamble correlator will detect wrong start of the packet (obviously)
-    if((int) new_size != packet_size * 8) {
-        previous_pulses.clear();
+    if((int) new_size == packet_size * 8) {
+        previous_pulses.insert(previous_pulses.end(), pulses.begin(), pulses.begin() + start_index);
+        std::vector<uint8_t> previous_packet = packet_to_bytes(previous_pulses, 0);
+        bytes.insert(bytes.end(), previous_packet.begin(), previous_packet.end());
     }
-    previous_pulses.insert(previous_pulses.end(), pulses.begin() + start_index + packet_size * (num_packets_per_call - 1) * 8, pulses.end());
+    previous_pulses.clear();
 
     //decode the num_packets_per_call-1 guaranteed packets to exist
     for(int i = 0; i < num_packets_per_call - 1; i++) {
@@ -68,13 +69,14 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
         bytes.insert(bytes.end(), data.begin(), data.end());
     }
 
+    previous_pulses.insert(previous_pulses.end(), pulses.begin() + start_index + packet_size * (num_packets_per_call - 1) * 8, pulses.end());
+
     if(((int) previous_pulses.size()) == packet_size * 8) {
         //means full packet is formed
         std::vector<uint8_t> previous_packet = packet_to_bytes(previous_pulses, 0);
         bytes.insert(bytes.end(), previous_packet.begin(), previous_packet.end());
         previous_pulses.clear();
     }
-
     return bytes;
 }
 

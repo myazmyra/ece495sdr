@@ -177,7 +177,7 @@ void send_to_file(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<ui
     int spb = parameters_tx->get_spb();
 
     //send some random bits
-    int n_rand_bits = 31;
+    int n_rand_bits = 99;
     for(int i = 0; i < n_rand_bits; i++) {
         uint8_t rand_bit = std::rand() % 2;
         std::vector< std::complex<float> > buff = bpsk_tx->modulate(rand_bit);
