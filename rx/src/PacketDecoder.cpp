@@ -21,10 +21,11 @@ PacketDecoder::~PacketDecoder() {
 std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     std::vector<int> r = correlate(pulses, preamble_vector);
     //find start of the preamble by correlating witht the preamble_vector and then moding with 16 * 8 = 128
+    //remove subtraction, this is stupid
     int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) -
                       ((int) preamble_vector.size());
 
-    //due to subtraction, start_index might be zero for noise, which will terminate the program
+    //due to subtraction, start_index might be less than zero for noise, which will terminate the program
     start_index = start_index >= 0 ? start_index : start_index + (int) preamble_vector.size();
     start_index %= packet_size * 8;
 
