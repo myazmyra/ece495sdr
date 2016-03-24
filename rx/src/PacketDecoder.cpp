@@ -2,7 +2,7 @@
 
 PacketDecoder::PacketDecoder() : preamble_size(2), data_size(12), checksum_size(2),
                                  packet_size(preamble_size + data_size + checksum_size),
-                                 LFSR_one(30), LFSR_two(178), num_packets_per_call(2) {
+                                 LFSR_one(120), LFSR_two(77), num_packets_per_call(2) {
     //form one vector with just preamble in it (all other bytes are zero),...
     //...then use it to construct num_packets_per_call vectors
     std::vector<uint8_t> empty_packet;

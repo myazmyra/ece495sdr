@@ -11,7 +11,7 @@ BPSK_rx::BPSK_rx(double sample_rate,
                  spb(spb),
                  decimation_factor(decimation_factor) {
 
-    power_desired = 0.5;
+    //power_desired = 0.5;
 
     //250 S/s == 100 MS / s * 2.5 / M
     //clock drift is 2.5ppm
@@ -36,19 +36,24 @@ BPSK_rx::BPSK_rx(double sample_rate,
     }
 
     //build the preamble vector
-    uint8_t LFSR_one = 30;
-    uint8_t LFSR_two = 178;
+    uint8_t LFSR_one = 120;
+    uint8_t LFSR_two = 77;
     std::vector<uint8_t> preamble_bytes;
     preamble_bytes.push_back(LFSR_one);
     preamble_bytes.push_back(LFSR_two);
     std::vector<uint8_t> preamble_bits = bytes_to_bits(preamble_bytes);
+
     std::vector<float> preamble_vector;
     for(int i = 0; i < (int) preamble_bits.size(); i++) {
-        preamble_vector.push_back(preamble_bits[i] ? 1.0 : -1.0);
+        for(int j = 0; j < samps_per_bit; j++) {
+            preamble_vector.push_back(preamble_bits[i] ? 1.0 : -1.0);
+        }
     }
 
     //build the preamble detector
-    preamble_detect = correlate(preamble_vector, h_matched);
+    std::vector<float> xcorr = conv(h_matched, preamble_vector);
+    preamble_detect.insert(preamble_detect.begin(),
+                           xcorr.begin() + (h_matched.size() - 1), xcorr.end() - (h_matched.size() - 1));
 
 }
 
@@ -109,18 +114,20 @@ std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::compl
     n_bits_received += downsampled.size() / spb; //this is just bit_rate
     */
 
-    std::vector<float> filtered_signal = conv(downsampled_signal, h_matched);
-    start_index = symbol_offset_synch(filtered_signal);
-
-
+    std::vector<float> filtered_signal = conv(h_matched, downsampled_signal);
+    //std::cout << "filtered_signal.size(): " << filtered_signal.size() << std::endl;
+    int polarity = 0;
+    start_index = symbol_offset_synch(filtered_signal, &polarity);
     //push previous samples
     //...
 
     //obtain samples
     std::vector<int> pulses;
-    for(int i = samples_per_bit + start_index - 1; i < (int) filtered_signal.size(); i += samples_per_bit) {
-        pulses.push_back(filtered_signal[i] > 0 ? 1 : -1);
+    for(int i = (samps_per_bit - 1) + start_index; i < (int) filtered_signal.size(); i += samps_per_bit) {
+        pulses.push_back(polarity * (filtered_signal[i] > 0 ? 1 : -1));
     }
+    //std::cout << "pulses.size(): " << pulses.size() << std::endl;
+    std::cout << "start_index: " << start_index << std::endl;
 
     //store leftover to previous samples vector
     //...
@@ -140,11 +147,11 @@ std::vector<uint8_t> BPSK_rx::bytes_to_bits(std::vector<uint8_t> bytes) {
     return bits;
 }
 
-std::vector<float> BPSK_rx::correlate(std::vector<float> x, std::vector<float> y) {
+std::vector<float> BPSK_rx::correlate_rx(std::vector<float> x, std::vector<float> y) {
     std::vector<float> r(x.size() + y.size() - 1);
     for(int i = 0; i < (int) r.size(); i++) {
         int ii = ((int) y.size()) - i - 1;
-        int tmp = 0;
+        float tmp = 0.0;
         for(int j = 0; j < (int) x.size(); j++) {
             if(ii >= 0 && ii < (int) y.size()) {
                 tmp += y[ii] * x[j];
@@ -158,13 +165,6 @@ std::vector<float> BPSK_rx::correlate(std::vector<float> x, std::vector<float> y
 
 std::vector<float> BPSK_rx::costas_loop(std::vector<float> r) {
     std::vector<float> result(r.size());
-    float h_lowpass[FILTER_SIZE] = {0.0187, 0.0106, 0.0086, 0.0035, -0.0026, -0.0069, -0.0068, -0.0011,
-                                    0.0100, 0.0249, 0.0411, 0.0568, 0.0702, 0.0807, 0.0878, 0.0913,
-                                    0.0913, 0.0878, 0.0807, 0.0702, 0.0568, 0.0411, 0.0249, 0.0100,
-                                    -0.0011, -0.0068, -0.0069, -0.0026, 0.0035, 0.0086, 0.0106, 0.0187};
-
-    float z_sin[FILTER_SIZE];
-    float z_cos[FILTER_SIZE];
     int start_index = 0, end_index = FILTER_SIZE - 1;
 
     static float theta = 0;
@@ -180,13 +180,13 @@ std::vector<float> BPSK_rx::costas_loop(std::vector<float> r) {
 
         //LPF SINE
         float lpf_sin = 0;
-        for(int i_h = FILTER_SIZE - 1, i_z = start_index; i_z != end_index; i_h--, i_z = (i_z + 1) % FILTER_SIZE) {
+        for(int i_h = FILTER_SIZE - 1, i_z = start_index; i_h >= 0; i_h--, i_z = (i_z + 1) % FILTER_SIZE) {
             lpf_sin += h_lowpass[i_h] * z_sin[i_z];
         }
 
         //LPF COSINE
         float lpf_cos = 0;
-        for(int i_h = FILTER_SIZE - 1, i_z = start_index; i_z != end_index; i_h--, i_z = (i_z + 1) % FILTER_SIZE) {
+        for(int i_h = FILTER_SIZE - 1, i_z = start_index; i_h >= 0; i_h--, i_z = (i_z + 1) % FILTER_SIZE) {
             lpf_cos += h_lowpass[i_h] * z_cos[i_z];
         }
 
@@ -194,11 +194,26 @@ std::vector<float> BPSK_rx::costas_loop(std::vector<float> r) {
 
         theta -= mu * lpf_sin * lpf_cos;
     }
+    //std::cout << "theta: " << theta << std::endl;
 
-    returnr result;
+    return result;
 
 }
 
-int BPSK_rx::symbol_offset_synch(std::vector<float> filtered_signal) {
-    return 0;
+int BPSK_rx::symbol_offset_synch(std::vector<float> filtered_signal, int* polarity) {
+    std::vector<float> xcorr = correlate_rx(filtered_signal, preamble_detect);
+    int ind_max = 0;
+    float max_val = std::abs(xcorr[ind_max]);
+    for(int i = 1; i < (int) xcorr.size(); i++) {
+        if(std::abs(xcorr[i]) > max_val) {
+            ind_max = i;
+            max_val = std::abs(xcorr[i]);
+        }
+    }
+    //std::cout << "xcorr[ind_max - 1]: " << xcorr[ind_max - 1] << std::endl;
+    //std::cout << "xcorr[ind_max]: " << xcorr[ind_max] << std::endl;
+    //std::cout << "xcorr[ind_max + 1]: " << xcorr[ind_max + 1] << std::endl;
+
+    *polarity = xcorr[ind_max] >= 0 ? 1 : -1;
+    return (ind_max % preamble_detect.size()) % (samps_per_bit - 1);
 }

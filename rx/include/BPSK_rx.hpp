@@ -18,9 +18,9 @@ class BPSK_rx {
     std::vector<float> correlate(std::vector<float> x, std::vector<float> y);
     //std::vector<float> agc(std::vector<float> received_signal);
     std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> bytes);
-    std::vector<float> correlate(std::vector<float> x, std::vector<float> y);
+    std::vector<float> correlate_rx(std::vector<float> x, std::vector<float> y);
     std::vector<float> costas_loop(std::vector<float> normalized_signal);
-    int symbol_offset_synch(std::vector<float> filtered_signal);
+    int symbol_offset_synch(std::vector<float> filtered_signal, int* polarity);
 
   private:
 
@@ -33,10 +33,9 @@ class BPSK_rx {
     double bit_rate;
     size_t spb;
     int decimation_factor; //this is set by Parameters_rx
-    std::vector<float> mixer_IF;
     std::vector<float> matched_filter;
 
-    float power_desired; //for agc
+    //float power_desired; //for agc
 
     //int recompute_period;
     int start_index;
@@ -47,6 +46,21 @@ class BPSK_rx {
 
     std::vector<float> h_matched;
     std::vector<float> preamble_detect;
+
+    float h_lowpass[FILTER_SIZE] = {0.0187, 0.0106, 0.0086, 0.0035, -0.0026, -0.0069, -0.0068, -0.0011,
+                                    0.0100, 0.0249, 0.0411, 0.0568, 0.0702, 0.0807, 0.0878, 0.0913,
+                                    0.0913, 0.0878, 0.0807, 0.0702, 0.0568, 0.0411, 0.0249, 0.0100,
+                                    -0.0011, -0.0068, -0.0069, -0.0026, 0.0035, 0.0086, 0.0106, 0.0187};
+
+    float z_sin[FILTER_SIZE] = {0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0,};
+                                
+    float z_cos[FILTER_SIZE] = {0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0,};
 
 };
 

@@ -88,7 +88,7 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     //...to be thread safe
     std::vector< std::complex<float> >* buff_ptr;
     //add bunch of junk to test packet decoder
-    int n_rand_packets = 19, count = n_rand_packets / num_packets_per_call;
+    int n_rand_packets = 0, count = n_rand_packets / num_packets_per_call;
     for(int i = 0; i < count; i++) {
         rand_noise_generator(buffers, num_packets_per_call, packet_size, spb_tx);
         std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
