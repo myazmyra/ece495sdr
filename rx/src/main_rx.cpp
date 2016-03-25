@@ -112,9 +112,9 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     while(true) {
         buff_ptr = new std::vector< std::complex<float> >(spb_tx);
         infile.read((char*) &(buff_ptr->front()), spb_tx * sizeof(std::complex<float>));
-        if(!infile) break; //std::cout << "infile.count(): " << infile.gcount() << std::endl;
+        //if(!infile) break; //std::cout << "infile.count(): " << infile.gcount() << std::endl;
         //std::cout << "cos(0): " << buff_ptr->at(0) << std::endl;
-        //if(infile.eof()) break;
+        if(infile.eof()) break;
         buffers.push_back(buff_ptr);
         //the packet decoder reads num_packets_per_call packets at a time,
         //num_packets_per_call-1 guaranteed to exist. each packet is 128 bits (i.e. 128 reads from file)
@@ -135,6 +135,7 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     //if packet wasnt completed to 3, generate random vectors and decode
     //like the usrp would do
     int n_packets_remaining = buffers.size() / (packet_size * 8);
+    //std::cout << "pack: " << n_packets_remaining << std::endl;
     //add rand packets to complete the buffer to three packets
     if(n_packets_remaining != 0) {
         rand_noise_generator(buffers, num_packets_per_call - n_packets_remaining, packet_size, spb_tx);
