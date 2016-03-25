@@ -26,7 +26,6 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     start_index -=  (int) preamble_vector.size();
     start_index = start_index < 0 ? start_index + (int) preamble_vector.size() :
                   start_index;
-    std::cout << "start_index: " << start_index << std::endl;
 
     std::vector<uint8_t> packet;
     std::vector<uint8_t> bytes;
@@ -51,6 +50,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
         previous_pulses.insert(previous_pulses.end(),
                                pulses.begin() + start_index, pulses.end());
     }
+    
     return bytes;
 }
 
@@ -121,13 +121,10 @@ std::vector<uint8_t> PacketDecoder::pulses_to_bytes(std::vector<int> pulses, int
         std::cout << (char) bytes[i];
     }
     */
-    /*if((checksum1 != 0) || (checksum2 != 0)) {
-        for(auto b : bytes) {
-            std::cout << (char) b;
-        }
+    if((checksum1 != 0) || (checksum2 != 0)) {
         std::vector<uint8_t> empty_bytes;
         return empty_bytes;
-    }*/
+    }
     //everything went well
 
     return bytes;

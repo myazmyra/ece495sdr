@@ -132,19 +132,14 @@ void receive_from_file(Parameters_rx* const parameters_rx,
         }
     }
 
-    //if packet wasnt completed to 3, generate random vectors and decode
-    //like the usrp would do
-    int n_packets_remaining = buffers.size() / (packet_size * 8);
-    //std::cout << "pack: " << n_packets_remaining << std::endl;
-    //add rand packets to complete the buffer to three packets
-    if(n_packets_remaining != 0) {
-        rand_noise_generator(buffers, num_packets_per_call - n_packets_remaining, packet_size, spb_tx);
-        std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
-        std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
-        for(auto b : bytes) {
-            outfile.write((char*) &b, sizeof(char));
-        }
+    rand_noise_generator(buffers, 4, packet_size, spb_tx);
+    std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
+    std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
+    for(auto b : bytes) {
+        outfile.write((char*) &b, sizeof(char));
     }
+
+
     //delete all the allocated buffer pointers
     for(int i = 0; i < (int) buffers.size(); i++) {
         delete buffers[i];

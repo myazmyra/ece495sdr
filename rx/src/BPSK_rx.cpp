@@ -78,6 +78,7 @@ std::vector<float> BPSK_rx::conv(std::vector<float> x, std::vector<float> h) {
 }
 
 std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers) {
+    //std::cout << "buff.size(): " << buffers.size() << std::endl;
 
     if(buffers.size() == 0) {
         std::cout << "Buffers size should never be ZERO" << std::endl << std::endl;
@@ -104,6 +105,7 @@ std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::compl
     for(int i = 0; i < (int) demodulated_signal.size(); i += downsample_factor) {
         downsampled_signal.push_back(demodulated_signal[i]);
     }
+    //std::cout << "downsampled_signal.size(): " << downsampled_signal.size() << std::endl;
 
     /*
     //recompute sampling time every (bit_rate / 250) * spb
@@ -116,14 +118,17 @@ std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::compl
 
     std::vector<float> filtered_signal = conv(h_matched, downsampled_signal);
     //std::cout << "filtered_signal.size(): " << filtered_signal.size() << std::endl;
-    int polarity = 0;
+    int polarity;
     start_index = symbol_offset_synch(filtered_signal, &polarity);
+    start_index = start_index < 0 ? start_index + samps_per_bit : start_index;
     //push previous samples
     //...
 
+    //std::cout << "start: " << start_index << std::endl;
+
     //obtain samples
     std::vector<int> pulses;
-    for(int i = (samps_per_bit - 1) + start_index; i < (int) filtered_signal.size(); i += samps_per_bit) {
+    for(int i = start_index; i < (int) filtered_signal.size(); i += samps_per_bit) {
         pulses.push_back(polarity * (filtered_signal[i] > 0 ? 1 : -1));
     }
     //std::cout << "pulses.size(): " << pulses.size() << std::endl;
@@ -204,16 +209,14 @@ int BPSK_rx::symbol_offset_synch(std::vector<float> filtered_signal, int* polari
     std::vector<float> xcorr = correlate_rx(filtered_signal, preamble_detect);
     int ind_max = 0;
     float max_val = std::abs(xcorr[ind_max]);
+
     for(int i = 1; i < (int) xcorr.size(); i++) {
         if(std::abs(xcorr[i]) > max_val) {
             ind_max = i;
             max_val = std::abs(xcorr[i]);
         }
     }
-    //std::cout << "xcorr[ind_max - 1]: " << xcorr[ind_max - 1] << std::endl;
-    //std::cout << "xcorr[ind_max]: " << xcorr[ind_max] << std::endl;
-    //std::cout << "xcorr[ind_max + 1]: " << xcorr[ind_max + 1] << std::endl;
 
     *polarity = xcorr[ind_max] >= 0 ? 1 : -1;
-    return (ind_max % preamble_detect.size()) % (samps_per_bit - 1);
+    return ((ind_max) - (int) preamble_detect.size()) % samps_per_bit;
 }
