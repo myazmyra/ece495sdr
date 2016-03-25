@@ -19,45 +19,56 @@ PacketDecoder::~PacketDecoder() {
 }
 
 std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
+
     std::vector<int> r = correlate(pulses, preamble_vector);
-    //find start of the preamble by correlating witht the preamble_vector and then moding with 16 * 8 = 128
-    //remove subtraction, this is stupid
-    int start_index = (std::distance(r.begin(), std::max_element(r.begin(), r.end())) % pulses.size() + 1) -
-                      ((int) preamble_vector.size());
+    int start_index = std::distance(r.begin(), std::max_element(r.begin(), r.end())) + 1;
+    start_index -=  (int) preamble_vector.size();
 
     //due to subtraction, start_index might be less than zero for noise, which will terminate the program
-    start_index = start_index >= 0 ? start_index : start_index + (int) preamble_vector.size();
+    //start_index = start_index >= 0 ? start_index : start_index + (int) preamble_vector.size();
     start_index %= packet_size * 8;
+    //std::cout << "i: " << start_index << std::endl;
+
+    //std::cout << "ind: " << start_index << std::endl;
 
     std::vector<uint8_t> bytes;
+    std::vector<uint8_t> packet;
 
-    //decode stuff from previous buffer first
-    size_t new_size = previous_pulses.size() + (size_t) start_index;
-    //need to check if a previous packet is fully formed
-    //it will fail to form in case of very low SNR, no transmission of packets, etc.
-    //because preamble correlator will detect wrong start of the packet (obviously)
-    if((int) new_size == packet_size * 8) {
-        previous_pulses.insert(previous_pulses.end(), pulses.begin(), pulses.begin() + start_index);
-        std::vector<uint8_t> previous_packet = packet_to_bytes(previous_pulses, 0);
-        bytes.insert(bytes.end(), previous_packet.begin(), previous_packet.end());
+    if(start_index != 0) {
+        previous_pulses.insert(previous_pulses.end(), pulses.begin(),
+                           pulses.begin() + ((num_packets_per_call - 1) * packet_size * 8) - previous_pulses.size());
+        if(start_index == 29) {
+            packet = packet_to_bytes_noch(previous_pulses, 0);
+        } else {
+            packet = packet_to_bytes(previous_pulses, 0);
+        }
+        previous_pulses.clear();
+        bytes.insert(bytes.end(), packet.begin(), packet.end());
+        for(int i = 0; i < (int) packet.size(); i++) {
+            std::cout << (char) packet[i];
+        }
+        packet.clear();
     }
-    previous_pulses.clear();
 
-    //decode the num_packets_per_call-1 guaranteed packets to exist
-    for(int i = 0; i < num_packets_per_call - 1; i++) {
-        std::vector<uint8_t> data = packet_to_bytes(pulses, start_index + i * (packet_size * 8));
-        bytes.insert(bytes.end(), data.begin(), data.end());
+    packet = packet_to_bytes(pulses, start_index);
+    bytes.insert(bytes.end(), packet.begin(), packet.end());
+    for(int i = 0; i < (int) packet.size(); i++) {
+        std::cout << (char) packet[i];
     }
+    packet.clear();
+    //std::cout << "bytes.size(): " << bytes.size() << std::endl;
 
     previous_pulses.insert(previous_pulses.end(), pulses.begin() + start_index + packet_size * (num_packets_per_call - 1) * 8, pulses.end());
-
-    if(((int) previous_pulses.size()) == packet_size * 8) {
-        //means full packet is formed
-        std::vector<uint8_t> previous_packet = packet_to_bytes(previous_pulses, 0);
-        bytes.insert(bytes.end(), previous_packet.begin(), previous_packet.end());
+    if((int) previous_pulses.size() == packet_size * 8) {
+        packet = packet_to_bytes(previous_pulses, 0);
+        bytes.insert(bytes.end(), packet.begin(), packet.end());
         previous_pulses.clear();
+        for(int i = 0; i < (int) packet.size(); i++) {
+            std::cout << (char) packet[i];
+        }
     }
 
+    //std::cout << "ind: " << start_index << std::endl;
     return bytes;
 }
 
@@ -79,7 +90,10 @@ std::vector<int> PacketDecoder::correlate(std::vector<int> x, std::vector<int> y
 
 std::vector<uint8_t> PacketDecoder::packet_to_bytes(std::vector<int> pulses, int start_index) {
     std::vector<uint8_t> bytes;
-    if(start_index >= (int) pulses.size()) return bytes;
+    /*if(start_index + packet_size * 8 >= (int) pulses.size()) {
+        std::cout << "beybaa" << std::endl;
+        return bytes;
+    }*/
     //get the bytes
     int data_start_index = start_index + preamble_size * 8;
     int data_end_index = data_start_index + data_size * 8;
@@ -87,7 +101,7 @@ std::vector<uint8_t> PacketDecoder::packet_to_bytes(std::vector<int> pulses, int
         uint8_t byte = 0;
         uint8_t mask = 1;
         for(int j = i; j < i + 8; j++) {//iterate through bits
-            byte |= pulses[j] > 0 ? mask : 0;
+            byte |= ((pulses[j] > 0) ? mask : 0);
             mask <<= 1;
         }
         bytes.push_back(byte);
@@ -99,7 +113,7 @@ std::vector<uint8_t> PacketDecoder::packet_to_bytes(std::vector<int> pulses, int
     for(int i = checksum_start_index; i < checksum_end_index; i += 8) {
         uint8_t mask = 1;
         for(int j = i; j < i + 8; j++) {//iterate through bits
-            checksum1 |= pulses[j] > 0 ? mask : 0;
+            checksum1 |= ((pulses[j] > 0) ? mask : 0);
             mask <<= 1;
         }
     }
@@ -110,7 +124,7 @@ std::vector<uint8_t> PacketDecoder::packet_to_bytes(std::vector<int> pulses, int
     for(int i = checksum_start_index; i < checksum_end_index; i += 8) {
         uint8_t mask = 1;
         for(int j = i; j < i + 8; j++) {//iterate through bits
-            checksum2 |= pulses[j] > 0 ? mask : 0;
+            checksum2 |= ((pulses[j] > 0) ? mask : 0);
             mask <<= 1;
         }
     }
@@ -126,6 +140,7 @@ std::vector<uint8_t> PacketDecoder::packet_to_bytes(std::vector<int> pulses, int
         return empty_bytes;
     }
     //everything went well
+
     return bytes;
 }
 
@@ -147,4 +162,71 @@ int PacketDecoder::get_packet_size() const {
 
 int PacketDecoder::get_num_packets_per_call() const {
     return num_packets_per_call;
+}
+
+std::vector<uint8_t> PacketDecoder::packet_to_bytes_noch(std::vector<int> pulses, int start_index) {
+    std::vector<uint8_t> bytes;
+    /*if(start_index + packet_size * 8 >= (int) pulses.size()) {
+        std::cout << "beybaa" << std::endl;
+        return bytes;
+    }*/
+    //get the bytes
+    std::cout << std::endl;
+    for(int i = 0; i < (int) pulses.size(); i++) {
+        std::cout << pulses[i] << ", ";
+    }
+    std::cout << std::endl;
+    int data_start_index = start_index + preamble_size * 8;
+    int data_end_index = data_start_index + data_size * 8;
+    for(int i = data_start_index; i < data_end_index; i += 8) {//iterate through bytes
+        uint8_t byte = 0;
+        uint8_t mask = 1;
+        for(int j = i; j < i + 8; j++) {//iterate through bits
+            byte |= ((pulses[j] > 0) ? mask : 0);
+            mask <<= 1;
+        }
+        bytes.push_back(byte);
+    }
+    //get the first checksum
+    uint8_t checksum1 = 0;
+    int checksum_start_index = data_end_index;
+    int checksum_end_index = checksum_start_index + (checksum_size / 2) * 8;
+    for(int i = checksum_start_index; i < checksum_end_index; i += 8) {
+        uint8_t mask = 1;
+        for(int j = i; j < i + 8; j++) {//iterate through bits
+            checksum1 |= ((pulses[j] > 0) ? mask : 0);
+            mask <<= 1;
+        }
+    }
+    //get the second checksum
+    uint8_t checksum2 = 0;
+    checksum_start_index = checksum_end_index;
+    checksum_end_index = checksum_start_index + (checksum_size / 2) * 8;
+    for(int i = checksum_start_index; i < checksum_end_index; i += 8) {
+        uint8_t mask = 1;
+        for(int j = i; j < i + 8; j++) {//iterate through bits
+            checksum2 |= ((pulses[j] > 0) ? mask : 0);
+            mask <<= 1;
+        }
+    }
+    std::cout << "checksum1: " << (int) checksum1 << std::endl;
+    std::cout << "checksum2: " << (int) checksum2 << std::endl;
+    //check the checksums
+    for(int i = 0; i < data_size / 2; i++) {
+        checksum1 ^= bytes[i];
+    }
+    for(int i = data_size / 2; i < data_size; i++) {
+        checksum2 ^= bytes[i];
+    }
+    if((checksum1 != 0)) {
+        std::cout << "checksum1 failed" << (int) checksum1 << std::endl;
+        //std::vector<uint8_t> empty_bytes;
+        //return empty_bytes;
+    }
+    if((checksum2 != 0)) {
+        std::cout << "checksum2 failed" << (int) checksum2 << std::endl;
+    }
+    //everything went well
+
+    return bytes;
 }

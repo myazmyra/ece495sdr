@@ -127,7 +127,7 @@ std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::compl
         pulses.push_back(polarity * (filtered_signal[i] > 0 ? 1 : -1));
     }
     //std::cout << "pulses.size(): " << pulses.size() << std::endl;
-    std::cout << "start_index: " << start_index << std::endl;
+    //std::cout << "start_index: " << start_index << std::endl;
 
     //store leftover to previous samples vector
     //...

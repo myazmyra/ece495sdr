@@ -17,6 +17,7 @@ class PacketDecoder {
     std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> packets);
     int get_num_packets_per_call() const;
     int get_packet_size() const;
+    std::vector<uint8_t> packet_to_bytes_noch(std::vector<int> pulses, int start_index);
 
   private:
 

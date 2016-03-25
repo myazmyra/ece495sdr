@@ -112,7 +112,9 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     while(true) {
         buff_ptr = new std::vector< std::complex<float> >(spb_tx);
         infile.read((char*) &(buff_ptr->front()), spb_tx * sizeof(std::complex<float>));
-        if(infile.eof()) break;
+        if(!infile) break; //std::cout << "infile.count(): " << infile.gcount() << std::endl;
+        //std::cout << "cos(0): " << buff_ptr->at(0) << std::endl;
+        //if(infile.eof()) break;
         buffers.push_back(buff_ptr);
         //the packet decoder reads num_packets_per_call packets at a time,
         //num_packets_per_call-1 guaranteed to exist. each packet is 128 bits (i.e. 128 reads from file)
