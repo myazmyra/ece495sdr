@@ -178,7 +178,7 @@ void send_to_file(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<ui
     int packet_size = 16;
 
     //send some random bits
-    int n_rand_bits = 150;
+    int n_rand_bits = 15;
 
     for(int i = 0; i < n_rand_bits; i++) {
         uint8_t rand_bit = std::rand() % 2;
