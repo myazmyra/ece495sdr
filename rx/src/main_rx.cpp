@@ -40,9 +40,10 @@ int main(int argc, char** argv) {
 
     BPSK_rx* bpsk_rx = new BPSK_rx(parameters_rx->get_sample_rate(),
                                    parameters_rx->get_f_IF(),
-                                   parameters_rx->get_bit_rate(),
+                                   parameters_rx->get_d_factor(),
                                    parameters_rx->get_spb(),
-                                   parameters_rx->get_decimation_factor());
+                                   parameters_rx->get_d_factor_new(),
+                                   parameters_rx->get_spb_new());
 
     //probably better idea to set LFSR_one and LFSR_two and data_per_packet...
     //...in Parameters_rx object
@@ -112,12 +113,10 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     while(true) {
         buff_ptr = new std::vector< std::complex<float> >(spb_tx);
         infile.read((char*) &(buff_ptr->front()), spb_tx * sizeof(std::complex<float>));
-        //if(!infile) break; //std::cout << "infile.count(): " << infile.gcount() << std::endl;
-        //std::cout << "cos(0): " << buff_ptr->at(0) << std::endl;
         if(infile.eof()) break;
         buffers.push_back(buff_ptr);
-        //the packet decoder reads num_packets_per_call packets at a time,
-        //num_packets_per_call-1 guaranteed to exist. each packet is 128 bits (i.e. 128 reads from file)
+        //the packet decoder reads 2 (possible) packets at a time,
+        //1 full acket guaranteed to exist guaranteed to exist. each packet is 128 bits (i.e. 128 reads from file)
         if((int) buffers.size() == num_packets_per_call * packet_size * 8) {
             std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
             std::vector<uint8_t> bytes = packet_decoder->decode(pulses);

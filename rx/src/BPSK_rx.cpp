@@ -2,17 +2,17 @@
 
 BPSK_rx::BPSK_rx(double sample_rate,
                  double f_IF,
-                 size_t spb_tx,
                  int d_factor,
                  size_t spb,
-                 int d_factor_new)
-                 :
-                 sample_rate(sample_rate),
-                 f_IF(f_IF),
-                 spb_tx(spb_tx),
-                 d_factor(d_factor),
-                 spb(spb),
-                 d_factor_new(d_factor_new) {
+                 int d_factor_new,
+                 size_t spb_new) {
+
+    this->sample_rate = sample_rate;
+    this->f_IF = f_IF;
+    this->d_factor = d_factor;
+    this->spb = spb;
+    this->d_factor_new = d_factor_new;
+    this->spb_new = spb_new;
 
     //power_desired = 0.5;
     start_index = 0;
@@ -21,8 +21,6 @@ BPSK_rx::BPSK_rx(double sample_rate,
     //clock drift is 2.5ppm
     //recompute_period = (int) ((bit_rate / ((double) 250)) *  (double) spb);
     //n_bits_received = 0;
-
-    spb_new = spb / d_factor_new;
 
     //build the matched filter
     for(int n = 0; n < spb_new; n++) {
@@ -58,7 +56,7 @@ BPSK_rx::~BPSK_rx() {
     std::cout << "Destroying the BPSK_rx object..." << std::endl << std::endl;
 }
 
-std::vector<uint8_t>& BPSK_rx::bytes_to_bits(std::vector<uint8_t>& bytes) const {
+std::vector<uint8_t> BPSK_rx::bytes_to_bits(std::vector<uint8_t> const &bytes) const {
     std::vector<uint8_t> bits;
     for(int i = 0; i < (int) bytes.size(); i++) {
         uint8_t byte = bytes[i];
@@ -70,10 +68,10 @@ std::vector<uint8_t>& BPSK_rx::bytes_to_bits(std::vector<uint8_t>& bytes) const 
     return bits;
 }
 
-std::vector<int>& BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers) {
+std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers) {
 
     //downsample and accumulate everything in one buffer, just like in Matlab
-    std::vector<float> received_signal(buffers.size() * spb_tx / (size_t) d_factor);
+    std::vector<float> received_signal(buffers.size() * spb);
     for(int i = 0; i < (int) buffers.size(); i++) {
         for(int j = 0, n = 0; n < (int) buffers[i]->size(); j++, n += d_factor) {
             received_signal[j] = real(buffers[i]->at(n));
@@ -88,7 +86,7 @@ std::vector<int>& BPSK_rx::receive_from_file(std::vector< std::vector< std::comp
     std::vector<float> demodulated_signal = costas_loop(normalized_signal);
 
     //downsample again
-    std::vector<float> downsampled_signal(received_signal.size() / (size_t) downsampled_factor);
+    std::vector<float> downsampled_signal(received_signal.size() / (size_t) d_factor_new);
     for(int i = 0, n = 0; n < (int) demodulated_signal.size(); i++, n += d_factor_new) {
         downsampled_signal[i] = demodulated_signal[n];
     }
@@ -105,7 +103,7 @@ std::vector<int>& BPSK_rx::receive_from_file(std::vector< std::vector< std::comp
     return pulses;
 }
 
-std::vector<float>& BPSK_rx::conv(std::vector<float>& x, std::vector<float>& h) const {
+std::vector<float> BPSK_rx::conv(std::vector<float> const &x, std::vector<float> const &h) const {
     std::vector<float> y(x.size() + h.size() - 1);
     for(int i = 0; i < (int) y.size(); i++) {
         int ii = i;
@@ -121,9 +119,9 @@ std::vector<float>& BPSK_rx::conv(std::vector<float>& x, std::vector<float>& h) 
     return y;
 }
 
-std::vector<float>& BPSK_rx::correlate_rx(std::vector<float>& x, std::vector<float>& y) const {
+std::vector<float> BPSK_rx::correlate_rx(std::vector<float> const &x, std::vector<float> const &y) const {
     std::vector<float> xcorr(x.size() + y.size() - 1);
-    for(int i = 0; i < (int) r.size(); i++) {
+    for(int i = 0; i < (int) xcorr.size(); i++) {
         int ii = ((int) y.size()) - i - 1;
         float tmp = 0.0;
         for(int j = 0; j < (int) x.size(); j++) {
@@ -137,7 +135,7 @@ std::vector<float>& BPSK_rx::correlate_rx(std::vector<float>& x, std::vector<flo
     return xcorr;
 }
 
-void BPSK_rx::costas_loop(std::vector<float>& r) {
+std::vector<float> BPSK_rx::costas_loop(std::vector<float> &r) {
     int start_index = 0, end_index = FILTER_SIZE - 1;
 
     static float theta = 0;
@@ -169,9 +167,11 @@ void BPSK_rx::costas_loop(std::vector<float>& r) {
         theta -= mu * lpf_sin * lpf_cos;
     }
 
+    return r;
+
 }
 
-int BPSK_rx::symbol_offset_synch(std::vector<float>& filtered_signal, int* polarity) const {
+int BPSK_rx::symbol_offset_synch(std::vector<float> const &filtered_signal, int *polarity) const {
     std::vector<float> xcorr = correlate_rx(filtered_signal, preamble_detect);
     int max_index = 0;
     float max_value = std::abs(xcorr[max_index]);

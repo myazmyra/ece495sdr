@@ -11,12 +11,15 @@ class Parameters_rx {
 
     Parameters_rx();
     ~Parameters_rx();
+    double get_sample_rate_tx() const;
+    double get_f_c_tx() const;
+    size_t get_spb_tx() const;
+    int get_d_factor() const;
     double get_sample_rate() const;
     double get_f_IF() const;
-    size_t get_spb_tx() const;
     size_t get_spb() const;
-    double get_bit_rate() const;
-    int get_decimation_factor() const;
+    int get_d_factor_new() const;
+    size_t get_spb_new() const;
 
   private:
 
@@ -28,6 +31,7 @@ class Parameters_rx {
     double f_IF;
     size_t spb;
     int d_factor_new;
+    size_t spb_new;
 
 };
 

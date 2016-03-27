@@ -30,6 +30,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     std::vector<uint8_t> packet;
     std::vector<uint8_t> bytes;
 
+    //complete the previous_pulses size to packet_size_bits
     if((int) previous_pulses.size() != 0) {
         previous_pulses.insert(previous_pulses.end(), pulses.begin(),
                                pulses.begin() + (packet_size * 8 - previous_pulses.size()));
@@ -39,6 +40,8 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     }
     previous_pulses.clear();
 
+    //if full packet can be formed from the current start_index...
+    //...decode bits starting from start_index
     if(start_index < packet_size * 8) {
         packet = pulses_to_bytes(pulses, start_index);
         bytes.insert(bytes.end(), packet.begin(), packet.end());
@@ -50,7 +53,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
         previous_pulses.insert(previous_pulses.end(),
                                pulses.begin() + start_index, pulses.end());
     }
-    
+
     return bytes;
 }
 
@@ -72,17 +75,13 @@ std::vector<int> PacketDecoder::correlate(std::vector<int> x, std::vector<int> y
 
 std::vector<uint8_t> PacketDecoder::pulses_to_bytes(std::vector<int> pulses, int start_index) {
     std::vector<uint8_t> bytes;
-    /*if(start_index + packet_size * 8 >= (int) pulses.size()) {
-        std::cout << "beybaa" << std::endl;
-        return bytes;
-    }*/
     //get the bytes
     int data_start_index = start_index + preamble_size * 8;
     int data_end_index = data_start_index + data_size * 8;
-    for(int i = data_start_index; i < data_end_index; i += 8) {//iterate through bytes
+    for(int i = data_start_index; i < data_end_index; i += 8) { //iterate through bytes
         uint8_t byte = 0;
         uint8_t mask = 1;
-        for(int j = i; j < i + 8; j++) {//iterate through bits
+        for(int j = i; j < i + 8; j++) { //iterate through bits
             byte |= ((pulses[j] > 0) ? mask : 0);
             mask <<= 1;
         }
@@ -117,16 +116,11 @@ std::vector<uint8_t> PacketDecoder::pulses_to_bytes(std::vector<int> pulses, int
     for(int i = data_size / 2; i < data_size; i++) {
         checksum2 ^= bytes[i];
     }
-    /*for(int i = 0; i < (int) bytes.size(); i++) {
-        std::cout << (char) bytes[i];
-    }
-    */
     if((checksum1 != 0) || (checksum2 != 0)) {
         std::vector<uint8_t> empty_bytes;
         return empty_bytes;
     }
-    //everything went well
-
+    //if everything went well
     return bytes;
 }
 
