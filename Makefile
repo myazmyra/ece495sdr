@@ -8,7 +8,6 @@ SOURCES_TX=tx/src/*
 IDIR_RX=rx/include
 SOURCES_RX=rx/src/*
 
-#all: main_rx
 all: main_tx main_rx
 
 main_tx: $(SOURCES_TX)
@@ -16,9 +15,6 @@ main_tx: $(SOURCES_TX)
 
 main_rx: $(SOURCES_RX)
 	$(CC) $(CFLAGS) -I$(IDIR_RX) $(SOURCES_RX) $(LIBS) -o main_rx
-
-#main_rx:
-	#g++ -std=c++11 -Wall -Irx/include rx/src/* -o main_rx
 
 .PHONY: clean
 
