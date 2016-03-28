@@ -30,7 +30,7 @@ int received = 0;
  **********************************************************************/
 int validate_input(int argc, char** argv);
 void print_help();
-std::vector<uint8_t> read_file();
+std::vector<uint8_t> read_file(PacketEncoder* packet_encoder);
 void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits);
 void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx);
 void send_to_file(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits);
@@ -42,22 +42,28 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    //reads the file, forms packets, converts to bit sequences
-    std::vector<uint8_t> bits = read_file();
-
     //initialize Parameters
     Parameters_tx* parameters_tx = new Parameters_tx();
+
+    //initialize PacketEncoder
+    PacketEncoder* packet_encoder = new PacketEncoder(parameters_tx->get_preamble_size(),
+                                                     parameters_tx->get_data_size(),
+                                                     parameters_tx->get_checksum_size(),
+                                                     parameters_tx->get_packet_size());
+
+    //reads the file, forms packets, converts to bit sequences
+    std::vector<uint8_t> bits = read_file(packet_encoder);
 
     //initialize BPSK_tx
     BPSK_tx* bpsk_tx = new BPSK_tx(parameters_tx->get_sample_rate(),
                                    parameters_tx->get_f_c(),
-                                   parameters_tx->get_bit_rate(),
                                    parameters_tx->get_spb());
 
     if(mode == std::string("local")) {
         send_to_file(parameters_tx, bpsk_tx, bits);
 
         delete bpsk_tx;
+        delete packet_encoder;
         delete parameters_tx;
 
         std::cout << "Done!" << std::endl << std::endl;
@@ -72,7 +78,8 @@ int main(int argc, char** argv) {
 
     //initialize USRP_tx
     USRP_tx* usrp_tx = new USRP_tx(parameters_tx->get_sample_rate(),
-                                   parameters_tx->get_f_c(), parameters_tx->get_spb());
+                                   parameters_tx->get_f_c(),
+                                   parameters_tx->get_spb());
 
     //makes it possible to stop the program by pressing Ctrl+C
     std::signal(SIGINT, &sig_int_handler);
@@ -95,6 +102,7 @@ int main(int argc, char** argv) {
 
     delete usrp_tx;
     delete bpsk_tx;
+    delete packet_encoder;
     delete parameters_tx;
 
     std::cout << "Done!" << std::endl << std::endl;
@@ -140,7 +148,7 @@ void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx) {
     }
 }
 
-std::vector<uint8_t> read_file() {
+std::vector<uint8_t> read_file(PacketEncoder* packet_encoder) {
     std::ifstream infile(input_filename, std::ios::ate | std::ios::binary);
     std::ifstream::pos_type size = 0;
     char* bytes = NULL;
@@ -159,7 +167,7 @@ std::vector<uint8_t> read_file() {
 
     //this will automatically form packets with preamble and checksum and then
     //create bit sequences from bytes
-    std::vector<uint8_t> bits = PacketEncoder::form_packets(bytes, (int) size);
+    std::vector<uint8_t> bits = packet_encoder->form_packets(bytes, (size_t) size);
     delete[] bytes;
     return bits;
 }

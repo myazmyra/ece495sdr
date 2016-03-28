@@ -30,7 +30,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     std::vector<uint8_t> packet;
     std::vector<uint8_t> bytes;
 
-    //complete the previous_pulses size to packet_size_bits
+    //complete the previous_pulses size to packet_size * 8
     if((int) previous_pulses.size() != 0) {
         previous_pulses.insert(previous_pulses.end(), pulses.begin(),
                                pulses.begin() + (packet_size * 8 - previous_pulses.size()));

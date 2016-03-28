@@ -52,6 +52,7 @@ class BPSK_rx {
     std::vector<float> h_matched;
     std::vector<float> preamble_detect;
 
+    //maybe you should have a unity gain filter here
     //costas loop filters and buffers
     float const h_lowpass[FILTER_SIZE] = {0.0187, 0.0106, 0.0086, 0.0035, -0.0026, -0.0069, -0.0068, -0.0011,
                                           0.0100, 0.0249, 0.0411, 0.0568, 0.0702, 0.0807, 0.0878, 0.0913,
@@ -61,12 +62,12 @@ class BPSK_rx {
     float z_sin[FILTER_SIZE] = {0, 0, 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 0, 0, 0, 0, 0,};
+                                0, 0, 0, 0, 0, 0, 0, 0};
 
     float z_cos[FILTER_SIZE] = {0, 0, 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 0, 0, 0, 0, 0,};
+                                0, 0, 0, 0, 0, 0, 0, 0};
 
 };
 
