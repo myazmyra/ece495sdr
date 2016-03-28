@@ -181,12 +181,12 @@ void send_to_file(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<ui
 
     std::cout << "Successfully opened output file: " << output_filename << std::endl << std::endl;
 
-    int size = (int) bits.size();
-    int spb = parameters_tx->get_spb();
-    int packet_size = 16;
+    size_t size = (int) bits.size();
+    size_t spb = parameters_tx->get_spb();
+    size_t packet_size = parameters_tx->get_packet_size();
 
     //send some random bits
-    int n_rand_bits = 0;
+    int n_rand_bits = 150;
 
     for(int i = 0; i < n_rand_bits; i++) {
         uint8_t rand_bit = std::rand() % 2;
@@ -194,14 +194,15 @@ void send_to_file(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<ui
         outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
     }
 
-    for(int i = 0; i < size; i++) {
+    for(int i = 0; i < (int) size; i++) {
         std::vector< std::complex<float> > buff = bpsk_tx->modulate(bits[i]);
         outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
     }
 
-    int remaining_n_rand_bits = ((packet_size * 8) -
+    int remaining_n_rand_bits = 2 * (((packet_size * 8) -
                                  (n_rand_bits % (packet_size * 8))) %
-                                 packet_size * 8;
+                                 packet_size * 8);
+
     for(int i = 0; i < remaining_n_rand_bits; i++) {
         uint8_t rand_bit = std::rand() % 2;
         std::vector< std::complex<float> > buff = bpsk_tx->modulate(rand_bit);

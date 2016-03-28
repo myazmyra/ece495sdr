@@ -8,7 +8,7 @@ PacketDecoder::PacketDecoder(int preamble_size,
                              preamble_size(preamble_size),
                              data_size(data_size),
                              checksum_size(checksum_size),
-                             packet_size(data_size) {
+                             packet_size(packet_size) {
 
     this->preamble_vector = preamble_vector;
 
@@ -34,22 +34,27 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     if((int) previous_pulses.size() != 0) {
         previous_pulses.insert(previous_pulses.end(), pulses.begin(),
                                pulses.begin() + (packet_size * 8 - previous_pulses.size()));
+        //std::cout << "here1: " << previous_pulses.size();
         packet = pulses_to_bytes(previous_pulses, 0);
+        previous_pulses.clear();
+        //std::cout << "; packet.size(): " << packet.size() << std::endl;
         bytes.insert(bytes.end(), packet.begin(), packet.end());
         packet.clear();
     }
-    previous_pulses.clear();
 
     //if full packet can be formed from the current start_index...
     //...decode bits starting from start_index
     if(start_index + packet_size * 8 <= (int) pulses.size() && start_index < (int) packet_size * 8) {
+        //std::cout << "start: " << start_index;
         packet = pulses_to_bytes(pulses, start_index);
+        //std::cout << "; packet.size(): " << packet.size() << std::endl;
         bytes.insert(bytes.end(), packet.begin(), packet.end());
         packet.clear();
         previous_pulses.insert(previous_pulses.end(),
                                pulses.begin() + start_index + packet_size * 8,
                                pulses.end());
     } else {
+        //std::cout << "here3" << std::endl;
         previous_pulses.insert(previous_pulses.end(),
                                pulses.begin() + start_index, pulses.end());
     }
