@@ -5,7 +5,8 @@ BPSK_rx::BPSK_rx(double sample_rate,
                  int d_factor,
                  size_t spb,
                  int d_factor_new,
-                 size_t spb_new) {
+                 size_t spb_new,
+                 std::vector<int> preamble_vector) {
 
     this->sample_rate = sample_rate;
     this->f_IF = f_IF;
@@ -23,29 +24,21 @@ BPSK_rx::BPSK_rx(double sample_rate,
     //n_bits_received = 0;
 
     //build the matched filter
-    for(int n = 0; n < spb_new; n++) {
+    for(int n = 0; n < (int) spb_new; n++) {
         h_matched.push_back(1.0);
     }
 
-    //build the preamble bits
-    uint8_t LFSR_one = 120;
-    uint8_t LFSR_two = 77;
-    std::vector<uint8_t> preamble_bytes;
-    preamble_bytes.push_back(LFSR_one);
-    preamble_bytes.push_back(LFSR_two);
-    std::vector<uint8_t> preamble_bits = bytes_to_bits(preamble_bytes);
-
-    //upsample the preamble bits
-    std::vector<float> preamble_vector;
-    for(int i = 0; i < (int) preamble_bits.size(); i++) {
-        for(int j = 0; j < spb_new; j++) {
-            preamble_vector.push_back(preamble_bits[i] ? 1.0 : -1.0);
+    //upsample the preamble_vector by factor of spb_new
+    std::vector<float> preamble_vector_upsampled;
+    for(int i = 0; i < (int) preamble_vector.size(); i++) {
+        for(int j = 0; j < (int) spb_new; j++) {
+            preamble_vector_upsampled.push_back((float) preamble_vector[i]);
         }
     }
 
     //build the preamble detector by convolving with matched filter...
     //...then truncating the transient points from left and right
-    std::vector<float> xcorr = conv(h_matched, preamble_vector);
+    std::vector<float> xcorr = conv(h_matched, preamble_vector_upsampled);
     preamble_detect.insert(preamble_detect.begin(),
                            xcorr.begin() + (h_matched.size() - 1),
                            xcorr.end() - (h_matched.size() - 1));
@@ -74,7 +67,7 @@ std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::compl
     std::vector<float> received_signal(buffers.size() * spb);
     for(int i = 0; i < (int) buffers.size(); i++) {
         for(int j = 0, n = 0; n < (int) buffers[i]->size(); j++, n += d_factor) {
-            received_signal[j] = real(buffers[i]->at(n));
+            received_signal[i * spb + j] = real(buffers[i]->at(n));
         }
     }
 
@@ -183,6 +176,6 @@ int BPSK_rx::symbol_offset_synch(std::vector<float> const &filtered_signal, int 
         }
     }
 
-    *polarity = xcorr[max_index] >= 0 ? 1 : -1;
+    *polarity = xcorr[max_index] > 0 ? 1 : -1;
     return (max_index + 1) % (int) spb_new;
 }

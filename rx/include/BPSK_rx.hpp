@@ -17,7 +17,8 @@ class BPSK_rx {
             int d_factor,
             size_t spb,
             int d_factor_new,
-            size_t spb_new);
+            size_t spb_new,
+            std::vector<int> preamble_vector);
     ~BPSK_rx();
     std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> const &bytes) const;
     std::vector<int> receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers);
