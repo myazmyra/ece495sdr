@@ -45,7 +45,6 @@ class Parameters_rx {
     size_t packet_size;
 
     //preamble parameters and builder
-    int m;
     std::vector<int> preamble_vector;
     std::vector<int> build_lfsr(int m) const;
 

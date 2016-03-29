@@ -18,7 +18,7 @@ Parameters_rx::Parameters_rx() {
   packet_size = preamble_size + data_size + checksum_size;
 
   //build preamble_vector
-  m = (int) lround(log2((double) preamble_size * 8));
+  int m = (int) lround(log2((double) preamble_size * 8));
   preamble_vector = build_lfsr(m);
   //build_lfsr returns 2^m - 1 length vector, pad -1 to this vector
   preamble_vector.push_back(-1);

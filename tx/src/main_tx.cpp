@@ -47,9 +47,10 @@ int main(int argc, char** argv) {
 
     //initialize PacketEncoder
     PacketEncoder* packet_encoder = new PacketEncoder(parameters_tx->get_preamble_size(),
-                                                     parameters_tx->get_data_size(),
-                                                     parameters_tx->get_checksum_size(),
-                                                     parameters_tx->get_packet_size());
+                                                      parameters_tx->get_data_size(),
+                                                      parameters_tx->get_checksum_size(),
+                                                      parameters_tx->get_packet_size(),
+                                                      parameters_tx->get_preamble_bytes());
 
     //reads the file, forms packets, converts to bit sequences
     std::vector<uint8_t> bits = read_file(packet_encoder);
@@ -73,7 +74,7 @@ int main(int argc, char** argv) {
 
     //else, broadcast mode, transmit through usrp
     //give thread priority to this thread
-	uhd::set_thread_priority_safe();
+	  //uhd::set_thread_priority_safe();
     std::cout << std::endl;
 
     //initialize USRP_tx

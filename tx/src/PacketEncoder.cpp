@@ -3,13 +3,25 @@
 PacketEncoder::PacketEncoder(size_t preamble_size,
                              size_t data_size,
                              size_t checksum_size,
-                             size_t packet_size) :
+                             size_t packet_size,
+                             std::vector<uint8_t> preamble_bytes) :
                              preamble_size(preamble_size),
                              data_size(data_size),
                              checksum_size(checksum_size),
                              packet_size(packet_size) {
-    LFSR_one = 120;
-    LFSR_two = 77;
+
+    this->preamble_size = preamble_size;
+    this->data_size = data_size;
+    this->checksum_size = checksum_size;
+    this->packet_size = packet_size;
+
+    if(this->preamble_size != preamble_bytes.size()) {
+      std::cout << "preamble_size is not equal to preamble_bytes.size()" << std::endl;
+      throw new std::runtime_error("preamble_size is not equal to preamble_bytes.size()");
+    }
+    for(int i = 0; i < (int) preamble_bytes.size(); i++) {
+        (this->preamble_bytes).push_back(preamble_bytes[i]);
+    }
 }
 
 PacketEncoder::~PacketEncoder() {
@@ -29,8 +41,9 @@ std::vector<uint8_t> PacketEncoder::form_packets(char* data, size_t size) const 
 
     std::vector<uint8_t> packets;
     for(int i = 0; i < (int) num_packets; i++) {
-        packets.push_back(LFSR_one);
-        packets.push_back(LFSR_two);
+        for(int i = 0; (int) preamble_bytes.size(); i++) {
+          packets.push_back(preamble_bytes[i]);
+        }
         //first part
         uint8_t checksum1 = 0;
         for(int j = 0; j < (int) data_size / 2; j++) {
@@ -58,8 +71,9 @@ std::vector<uint8_t> PacketEncoder::form_packets(char* data, size_t size) const 
     }
 
     //pad anything leftover
-    packets.push_back(LFSR_one);
-    packets.push_back(LFSR_two);
+    for(int i = 0; i < (int) preamble_bytes.size(); i++) {
+      packets.push_back(preamble_bytes[i]);
+    }
 
     //count number of bytes added, could be calculated from the loop index...
     //...but code would become even uglier

@@ -1,4 +1,6 @@
 #include <iostream>
+#include <vector>
+#include <cmath>
 
 #ifndef _Included_Parameters_tx
 #define _Included_Parameters_tx
@@ -17,6 +19,7 @@ class Parameters_tx {
     size_t get_data_size() const;
     size_t get_checksum_size() const;
     size_t get_packet_size() const;
+    std::vector<uint8_t> get_preamble_bytes() const;
 
   private:
 
@@ -34,6 +37,10 @@ class Parameters_tx {
     size_t data_size;
     size_t checksum_size;
     size_t packet_size;
+
+    std::vector<uint8_t> preamble_bytes;
+    std::vector<int> build_lfsr(int m) const;
+    std::vector<uint8_t> pulses_to_bytes(std::vector<int> pulses) const;
 
 };
 

@@ -33,6 +33,6 @@
 .*~
 *.bry
 !.gitignore
+.DS_Store
 main_tx
 main_rx
-
