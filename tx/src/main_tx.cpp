@@ -30,10 +30,10 @@ int received = 0;
  **********************************************************************/
 int validate_input(int argc, char** argv);
 void print_help();
-std::vector<uint8_t> read_file(PacketEncoder* const packet_encoder);
+std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder, size_t * file_size);
 void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits);
 void receive(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx);
-void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits);
+void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits, size_t file_size);
 inline float rand_float(float a, float b);
 
 int main(int argc, char** argv) {
@@ -54,7 +54,8 @@ int main(int argc, char** argv) {
                                                       parameters_tx->get_preamble_bytes());
 
     //reads the file, forms packets, converts to bit sequences
-    std::vector<uint8_t> bits = read_file(packet_encoder);
+    size_t file_size;
+    std::vector<uint8_t> bits = read_file(packet_encoder, &file_size);
 
     //initialize BPSK_tx
     BPSK_tx* bpsk_tx = new BPSK_tx(parameters_tx->get_sample_rate(),
@@ -62,7 +63,7 @@ int main(int argc, char** argv) {
                                    parameters_tx->get_spb());
 
     if(mode == std::string("local")) {
-        send_to_file(parameters_tx, bpsk_tx, bits);
+        send_to_file(parameters_tx, bpsk_tx, bits, file_size);
 
         delete bpsk_tx;
         delete packet_encoder;
@@ -150,7 +151,7 @@ void receive(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_
     }
 }
 
-std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder) {
+std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder, size_t * file_size) {
     std::ifstream infile(input_filename, std::ios::ate | std::ios::binary);
     std::ifstream::pos_type size = 0;
     char* bytes = NULL;
@@ -162,6 +163,7 @@ std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder) {
 
     std::cout << "Successfully opened input file: " << input_filename << std::endl << std::endl;
     size = infile.tellg();
+    *file_size = size;
     bytes = new char[size];
     infile.seekg(0, std::ios::beg);
     infile.read(bytes, size);
@@ -174,7 +176,7 @@ std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder) {
     return bits;
 }
 
-void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits) {
+void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits, size_t file_size) {
     std::ofstream outfile(output_filename, std::ofstream::binary);
     if(outfile.is_open() == false) {
         std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
@@ -184,7 +186,6 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
     std::cout << "Successfully opened output file: " << output_filename << std::endl << std::endl;
 
     size_t bits_size = (int) bits.size();
-    size_t bytes_size = bits_size / 8;
     size_t spb = parameters_tx->get_spb();
     size_t preamble_size = parameters_tx->get_preamble_size();
     size_t data_size = parameters_tx->get_data_size();
@@ -229,7 +230,7 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
     }
 
     //send total bytes_size
-    
+
 
     for(int i = 0; i < (int) bits_size; i++) {
         std::vector< std::complex<float> > buff = bpsk_tx->modulate(bits[i]);
