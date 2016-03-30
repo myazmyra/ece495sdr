@@ -12,7 +12,7 @@ Parameters_tx::Parameters_tx() {
     packet_size = preamble_size + data_size + checksum_size;
 
     int m = (int) lround(log2((double) preamble_size * 8));
-    std::vector<int> preamble_vector = build_lfsr(m);
+    preamble_vector = build_lfsr(m);
     preamble_vector.push_back(-1);
     preamble_bytes = pulses_to_bytes(preamble_vector);
 
@@ -32,7 +32,9 @@ size_t Parameters_tx::get_preamble_size() const { return preamble_size; }
 size_t Parameters_tx::get_data_size() const { return data_size; }
 size_t Parameters_tx::get_checksum_size() const { return checksum_size; }
 size_t Parameters_tx::get_packet_size() const { return packet_size; }
+std::vector<int> Parameters_tx::get_preamble_vector() const { return preamble_vector; }
 std::vector<uint8_t> Parameters_tx::get_preamble_bytes() const { return preamble_bytes; }
+
 
 std::vector<int> Parameters_tx::build_lfsr(int m) const {
   //m should be greater than 1 and is a power of 2

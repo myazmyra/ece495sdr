@@ -34,6 +34,7 @@ std::vector<uint8_t> read_file(PacketEncoder* const packet_encoder);
 void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits);
 void receive(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx);
 void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits);
+inline float rand_float(float a, float b);
 
 int main(int argc, char** argv) {
 
@@ -184,20 +185,71 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
 
     size_t size = (int) bits.size();
     size_t spb = parameters_tx->get_spb();
+    size_t preamble_size = parameters_tx->get_preamble_size();
+    size_t data_size = parameters_tx->get_data_size();
+    size_t checksum_size = parameters_tx->get_checksum_size();
     size_t packet_size = parameters_tx->get_packet_size();
+    std::vector<int> preamble_vector = parameters_tx->get_preamble_vector();
 
-    //send some random bits
-    int n_rand_bits = 250;
-
+    //send random values to simulate real life
+    int n_rand_bits = 330;
     for(int i = 0; i < n_rand_bits; i++) {
-        uint8_t rand_bit = std::rand() % 2;
-        std::vector< std::complex<float> > buff = bpsk_tx->modulate(rand_bit);
+        std::vector< std::complex<float> > buff;
+        for(int j = 0; j < (int) spb; j++) {
+            buff.push_back(rand_float(-1.0, 1.0));
+        }
+    }
+
+    //send ONES to synchronize PLL
+    int n_synch_bits = 4 * packet_size * 8;
+    for(int i = 0; i < n_synch_bits; i++) {
+        std::vector< std::complex<float> > buff = bpsk_tx->modulate(1);
         outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
+    }
+
+    //send redundant empty packets with wrong checksums, to synchronize decoder
+    int pre_redundant_packets = 4;
+    for(int i = 0; i < pre_redundant_packets; i++) {
+        //send preamble
+        for(int j = 0; j < (int) preamble_size * 8; j++) {
+            std::vector< std::complex<float> > buff = bpsk_tx->modulate(preamble_vector[j] > 0);
+            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
+        }
+        //send bunch of ZEROS as data
+        for(int j = 0; j < (int) data_size * 8; j++) {
+            std::vector< std::complex<float> > buff = bpsk_tx->modulate(0);
+            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
+        }
+        //send bunch of ONES as checksum
+        for(int j = 0; j < (int) checksum_size * 8; j++) {
+            std::vector< std::complex<float> > buff = bpsk_tx->modulate(1);
+            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
+        }
     }
 
     for(int i = 0; i < (int) size; i++) {
         std::vector< std::complex<float> > buff = bpsk_tx->modulate(bits[i]);
         outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
+    }
+
+    //send redundant empty packets with wrong checksums, to help receiver not lose synchronization
+    int post_redundant_packets = 4;
+    for(int i = 0; i < post_redundant_packets; i++) {
+        //send preamble
+        for(int j = 0; j < (int) preamble_size * 8; j++) {
+            std::vector< std::complex<float> > buff = bpsk_tx->modulate(preamble_vector[j] > 0);
+            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
+        }
+        //send bunch of ZEROS as data
+        for(int j = 0; j < (int) data_size * 8; j++) {
+            std::vector< std::complex<float> > buff = bpsk_tx->modulate(0);
+            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
+        }
+        //send bunch of ONES as checksum
+        for(int j = 0; j < (int) checksum_size * 8; j++) {
+            std::vector< std::complex<float> > buff = bpsk_tx->modulate(1);
+            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
+        }
     }
 
     int remaining_n_rand_bits = (((packet_size * 8) -
@@ -207,14 +259,24 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
 
 
     for(int i = 0; i < remaining_n_rand_bits; i++) {
-        uint8_t rand_bit = std::rand() % 2;
-        std::vector< std::complex<float> > buff = bpsk_tx->modulate(rand_bit);
+        std::vector< std::complex<float> > buff;
+        for(int j = 0; j < (int) spb; j++) {
+            buff.push_back(rand_float(-1.0, 1.0));
+        }
         outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
     }
 
     outfile.close();
 
     std::cout << "Done writing to output file: " << output_filename << std::endl << std::endl;
+}
+
+
+inline float rand_float(float a, float b) {
+    float random = ((float) std::rand()) / ((float) RAND_MAX);
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
 }
 
 void print_help() {

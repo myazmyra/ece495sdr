@@ -64,7 +64,6 @@ std::vector<uint8_t> PacketEncoder::form_packets(char* data, size_t file_size) c
         }
         //push the checksums
         for(int j = 0; j < (int) checksum_size; j++) {
-            std::cout << "ch: " << (int) checksums[j] << std::endl;
             packets.push_back(checksums[j]);
         }
     }

@@ -114,8 +114,6 @@ void receive_from_file(Parameters_rx* const parameters_rx,
         }
     }
 
-    std::cout << "buffers.size(); " << buffers.size() << std::endl;
-
     //delete all the allocated buffer pointers
     for(int i = 0; i < (int) buffers.size(); i++) {
         delete buffers[i];
