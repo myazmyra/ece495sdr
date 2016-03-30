@@ -183,7 +183,8 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
 
     std::cout << "Successfully opened output file: " << output_filename << std::endl << std::endl;
 
-    size_t size = (int) bits.size();
+    size_t bits_size = (int) bits.size();
+    size_t bytes_size = bits_size / 8;
     size_t spb = parameters_tx->get_spb();
     size_t preamble_size = parameters_tx->get_preamble_size();
     size_t data_size = parameters_tx->get_data_size();
@@ -227,7 +228,10 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
         }
     }
 
-    for(int i = 0; i < (int) size; i++) {
+    //send total bytes_size
+    
+
+    for(int i = 0; i < (int) bits_size; i++) {
         std::vector< std::complex<float> > buff = bpsk_tx->modulate(bits[i]);
         outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
     }
