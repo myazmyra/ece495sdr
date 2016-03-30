@@ -32,12 +32,17 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
 
     //complete the previous_pulses size to packet_size * 8
     if((int) previous_pulses.size() != 0) {
+        std::cout << "1:" << std::endl;
         previous_pulses.insert(previous_pulses.end(), pulses.begin(),
                                pulses.begin() + (packet_size * 8 - previous_pulses.size()));
-        //std::cout << "here1: " << previous_pulses.size();
         packet = pulses_to_bytes(previous_pulses, 0);
+        //std::cout << "packet.size(): " << packet.size() << std::endl;
+        /*for(int i = 0; i < (int) previous_pulses.size(); i++) {
+            std::cout << previous_pulses[i] << " ";
+        }
+        std::cout << std::endl;
+        */
         previous_pulses.clear();
-        //std::cout << "; packet.size(): " << packet.size() << std::endl;
         bytes.insert(bytes.end(), packet.begin(), packet.end());
         packet.clear();
     }
@@ -45,7 +50,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     //if full packet can be formed from the current start_index...
     //...decode bits starting from start_index
     if(start_index + packet_size * 8 <= (int) pulses.size() && start_index < (int) packet_size * 8) {
-        //std::cout << "start: " << start_index;
+        std::cout << "2: " << std::endl;
         packet = pulses_to_bytes(pulses, start_index);
         //std::cout << "; packet.size(): " << packet.size() << std::endl;
         bytes.insert(bytes.end(), packet.begin(), packet.end());
@@ -118,6 +123,9 @@ std::vector<uint8_t> PacketDecoder::pulses_to_bytes(std::vector<int> const &puls
             mask <<= 1;
         }
     }
+    std::cout << "ch1_before: " << (int) checksum1 << std::endl;
+    std::cout << "ch2_before: " << (int) checksum2 << std::endl;
+
     //check the checksums
     for(int i = 0; i < data_size / 2; i++) {
         checksum1 ^= bytes[i];
@@ -125,6 +133,12 @@ std::vector<uint8_t> PacketDecoder::pulses_to_bytes(std::vector<int> const &puls
     for(int i = data_size / 2; i < data_size; i++) {
         checksum2 ^= bytes[i];
     }
+    for(int i = 0; i < (int) bytes.size(); i++) {
+        std::cout << (int) bytes[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "ch1_after: " << (int) checksum1 << std::endl;
+    std::cout << "ch2_after: " << (int) checksum2 << std::endl;
     if((checksum1 != 0) || (checksum2 != 0)) {
         std::vector<uint8_t> empty_bytes;
         return empty_bytes;

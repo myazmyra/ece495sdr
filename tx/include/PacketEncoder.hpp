@@ -28,7 +28,7 @@ class PacketEncoder {
 
       std::vector<uint8_t> preamble_bytes;
 
-      std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> packets) const;
+      std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> const &packets) const;
 
 };
 

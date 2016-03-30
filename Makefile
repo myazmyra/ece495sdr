@@ -11,7 +11,7 @@ SOURCES_RX=rx/src/*
 all: main_tx main_rx
 
 main_tx: $(SOURCES_TX)
-	$(CC) $(CFLAGS) -I$(IDIR_TX) $(SOURCES_TX) -I=opt/local/include $(LIBS) -o main_tx
+	$(CC) $(CFLAGS) -I$(IDIR_TX) $(SOURCES_TX) $(LIBS) -o main_tx
 
 main_rx: $(SOURCES_RX)
 	$(CC) $(CFLAGS) -I$(IDIR_RX) $(SOURCES_RX) $(LIBS) -o main_rx

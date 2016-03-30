@@ -100,7 +100,7 @@ void receive_from_file(Parameters_rx* const parameters_rx,
         infile.read((char*) &(buff_ptr->front()), spb_tx * sizeof(std::complex<float>));
         if(infile.eof()) break;
         buffers.push_back(buff_ptr);
-        if(buffers.size() == packet_size * 8) {
+        if(buffers.size() == 2 * packet_size * 8) {
             std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
             std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
             for(auto b : bytes) {
@@ -113,6 +113,8 @@ void receive_from_file(Parameters_rx* const parameters_rx,
             buffers.clear();
         }
     }
+
+    std::cout << "buffers.size(); " << buffers.size() << std::endl;
 
     //delete all the allocated buffer pointers
     for(int i = 0; i < (int) buffers.size(); i++) {

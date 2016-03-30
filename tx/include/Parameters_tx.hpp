@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <stdexcept>
 
 #ifndef _Included_Parameters_tx
 #define _Included_Parameters_tx

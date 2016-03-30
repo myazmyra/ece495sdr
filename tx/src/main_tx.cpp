@@ -30,10 +30,10 @@ int received = 0;
  **********************************************************************/
 int validate_input(int argc, char** argv);
 void print_help();
-std::vector<uint8_t> read_file(PacketEncoder* packet_encoder);
-void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits);
-void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx);
-void send_to_file(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits);
+std::vector<uint8_t> read_file(PacketEncoder* const packet_encoder);
+void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits);
+void receive(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx);
+void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits);
 
 int main(int argc, char** argv) {
 
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits) {
+void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits) {
 
     int i = 0;
     int size = (int) bits.size();
@@ -137,7 +137,7 @@ void transmit(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx, 
     usrp_tx->send_end_of_burst();
 }
 
-void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx) {
+void receive(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx) {
     while(not stop_signal_called) {
         //receive some stuff from the microcontroller
         mtx.lock();
@@ -149,7 +149,7 @@ void receive(Parameters_tx* parameters_tx, USRP_tx* usrp_tx, BPSK_tx* bpsk_tx) {
     }
 }
 
-std::vector<uint8_t> read_file(PacketEncoder* packet_encoder) {
+std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder) {
     std::ifstream infile(input_filename, std::ios::ate | std::ios::binary);
     std::ifstream::pos_type size = 0;
     char* bytes = NULL;
@@ -173,7 +173,7 @@ std::vector<uint8_t> read_file(PacketEncoder* packet_encoder) {
     return bits;
 }
 
-void send_to_file(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<uint8_t> bits) {
+void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits) {
     std::ofstream outfile(output_filename, std::ofstream::binary);
     if(outfile.is_open() == false) {
         std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
@@ -187,7 +187,7 @@ void send_to_file(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<ui
     size_t packet_size = parameters_tx->get_packet_size();
 
     //send some random bits
-    int n_rand_bits = 150;
+    int n_rand_bits = 250;
 
     for(int i = 0; i < n_rand_bits; i++) {
         uint8_t rand_bit = std::rand() % 2;
@@ -200,9 +200,11 @@ void send_to_file(Parameters_tx* parameters_tx, BPSK_tx* bpsk_tx, std::vector<ui
         outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
     }
 
-    int remaining_n_rand_bits = 2 * (((packet_size * 8) -
-                                 (n_rand_bits % (packet_size * 8))) %
-                                 packet_size * 8);
+    int remaining_n_rand_bits = (((packet_size * 8) -
+                                (n_rand_bits % (packet_size * 8))) %
+                                (packet_size * 8))
+                                + packet_size * 8;
+
 
     for(int i = 0; i < remaining_n_rand_bits; i++) {
         uint8_t rand_bit = std::rand() % 2;
