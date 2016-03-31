@@ -37,12 +37,6 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
         previous_pulses.insert(previous_pulses.end(), pulses.begin(),
                                pulses.begin() + (packet_size * 8 - previous_pulses.size()));
         packet = pulses_to_bytes(previous_pulses, 0);
-        //std::cout << "packet.size(): " << packet.size() << std::endl;
-        /*for(int i = 0; i < (int) previous_pulses.size(); i++) {
-            std::cout << previous_pulses[i] << " ";
-        }
-        std::cout << std::endl;
-        */
         previous_pulses.clear();
         bytes.insert(bytes.end(), packet.begin(), packet.end());
         packet.clear();
@@ -52,14 +46,12 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     //...decode bits starting from start_index
     if(start_index + (int) packet_size * 8 <= (int) pulses.size() && start_index < (int) packet_size * 8) {
         packet = pulses_to_bytes(pulses, start_index);
-        //std::cout << "; packet.size(): " << packet.size() << std::endl;
         bytes.insert(bytes.end(), packet.begin(), packet.end());
         packet.clear();
         previous_pulses.insert(previous_pulses.end(),
                                pulses.begin() + start_index + packet_size * 8,
                                pulses.end());
     } else {
-        //std::cout << "here3" << std::endl;
         previous_pulses.insert(previous_pulses.end(),
                                pulses.begin() + start_index, pulses.end());
     }

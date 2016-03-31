@@ -8,19 +8,12 @@ PacketEncoder::PacketEncoder(size_t preamble_size,
                              preamble_size(preamble_size),
                              data_size(data_size),
                              checksum_size(checksum_size),
-                             packet_size(packet_size) {
-
-    this->preamble_size = preamble_size;
-    this->data_size = data_size;
-    this->checksum_size = checksum_size;
-    this->packet_size = packet_size;
+                             packet_size(packet_size),
+                             preamble_bytes(preamble_bytes) {
 
     if(this->preamble_size != preamble_bytes.size()) {
       std::cout << "preamble_size is not equal to preamble_bytes.size()" << std::endl;
       throw new std::runtime_error("preamble_size is not equal to preamble_bytes.size()");
-    }
-    for(int i = 0; i < (int) preamble_bytes.size(); i++) {
-        (this->preamble_bytes).push_back(preamble_bytes[i]);
     }
 }
 
