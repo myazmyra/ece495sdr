@@ -1,17 +1,19 @@
 #include "PacketDecoder.hpp"
 
-PacketDecoder::PacketDecoder(int preamble_size,
-                             int data_size,
-                             int checksum_size,
-                             int packet_size,
+PacketDecoder::PacketDecoder(size_t preamble_size,
+                             size_t data_size,
+                             size_t checksum_size,
+                             size_t packet_size,
                              std::vector<int> preamble_vector) :
                              preamble_size(preamble_size),
                              data_size(data_size),
                              checksum_size(checksum_size),
-                             packet_size(packet_size) {
-
-    this->preamble_vector = preamble_vector;
-
+                             packet_size(packet_size),
+                             preamble_vector(preamble_vector) {
+    total_size = 0;
+    received_size = 0;
+    streaming_started = false;
+    streaming_ended = false;
 }
 
 PacketDecoder::~PacketDecoder() {
@@ -48,7 +50,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
 
     //if full packet can be formed from the current start_index...
     //...decode bits starting from start_index
-    if(start_index + packet_size * 8 <= (int) pulses.size() && start_index < (int) packet_size * 8) {
+    if(start_index + (int) packet_size * 8 <= (int) pulses.size() && start_index < (int) packet_size * 8) {
         packet = pulses_to_bytes(pulses, start_index);
         //std::cout << "; packet.size(): " << packet.size() << std::endl;
         bytes.insert(bytes.end(), packet.begin(), packet.end());
@@ -81,9 +83,13 @@ std::vector<int> PacketDecoder::correlate(std::vector<int> const &x, std::vector
     return r;
 }
 
-std::vector<uint8_t> PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_index) const {
+std::vector<uint8_t> PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_index)  {
+    if(streaming_ended) {
+        std::vector<uint8_t> empty_bytes;
+        return empty_bytes;
+    }
     std::vector<uint8_t> bytes;
-    if(start_index + packet_size * 8 > (int) pulses.size()) {
+    if(start_index + (int) packet_size * 8 > (int) pulses.size()) {
         std::cout << "Unexpected start_index and pulses.size()" << std::endl;
         throw new std::runtime_error("Unexpected start_index and pulses.size()");
     }
@@ -99,40 +105,52 @@ std::vector<uint8_t> PacketDecoder::pulses_to_bytes(std::vector<int> const &puls
         }
         bytes.push_back(byte);
     }
-    //get the first checksum
-    uint8_t checksum1 = 0;
-    int checksum_start_index = data_end_index;
-    int checksum_end_index = checksum_start_index + (checksum_size / 2) * 8;
-    for(int i = checksum_start_index; i < checksum_end_index; i += 8) {
-        uint8_t mask = 1;
-        for(int j = i; j < i + 8; j++) { //iterate through bits
-            checksum1 |= ((pulses[j] > 0) ? mask : 0);
-            mask <<= 1;
-        }
-    }
-    //get the second checksum
-    uint8_t checksum2 = 0;
-    checksum_start_index = checksum_end_index;
-    checksum_end_index = checksum_start_index + (checksum_size / 2) * 8;
-    for(int i = checksum_start_index; i < checksum_end_index; i += 8) {
-        uint8_t mask = 1;
-        for(int j = i; j < i + 8; j++) { //iterate through bits
-            checksum2 |= ((pulses[j] > 0) ? mask : 0);
-            mask <<= 1;
-        }
+    if(streaming_started && total_size != 0) {
+        received_size += data_size;
     }
 
-    //check the checksums
-    for(int i = 0; i < data_size / 2; i++) {
-        checksum1 ^= bytes[i];
+    //get the checksums
+    std::vector<uint8_t> checksums;
+    for(int i = 0; i < (int) checksum_size; i++) {
+        uint8_t checksum = 0;
+        uint8_t mask = 1;
+        for(int j = 0; j < 8; j++) {
+            checksum |= ((pulses[data_end_index + i * 8 + j] > 0) ? mask : 0);
+            mask <<= 1;
+        }
+        checksums.push_back(checksum);
     }
-    for(int i = data_size / 2; i < data_size; i++) {
-        checksum2 ^= bytes[i];
-    }
-    if((checksum1 != 0) || (checksum2 != 0)) {
-        std::vector<uint8_t> empty_bytes;
-        return empty_bytes;
+
+    for(int i = 0; i < (int) checksum_size; i++) {
+        uint8_t checksum = checksums[i];
+        for(int j = (int) ((i + 1) * data_size / checksum_size - data_size / checksum_size);
+                j < (int) ((i + 1) * data_size / checksum_size);
+                j++) {
+                    uint8_t byte = (uint8_t) bytes[j];
+                    checksum ^= byte;
+        }
+        if(checksum == (uint8_t) (~0) && total_size == 0) {
+            int shift_size = 0;
+            //TX and RX machines should have same number of bytes per int
+            for(int j = 0; j < (int) sizeof(int); j++) {
+                total_size |= (((int) bytes[j]) << shift_size);
+                shift_size += 8;
+            }
+        } else if(checksum != 0) {
+            std::vector<uint8_t> empty_bytes;
+            return empty_bytes;
+        }
     }
     //if everything went well
+    //remove redundant bytes if needed
+    if(streaming_ended == false && received_size >= total_size) {
+        streaming_ended = true;
+        bytes.erase(bytes.end() - (received_size - total_size), bytes.end());
+    }
+    //if first packet checksums pass
+    if(not streaming_started) {
+        streaming_started = true;
+        received_size = data_size;
+    }
     return bytes;
 }

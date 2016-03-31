@@ -203,7 +203,7 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
     //send ONES to synchronize PLL
     int n_synch_bits = 4 * packet_size * 8;
     for(int i = 0; i < n_synch_bits; i++) {
-        std::vector< std::complex<float> > buff = bpsk_tx->modulate(1);
+        std::vector< std::complex<float> > buff = bpsk_tx->modulate(std::rand() % 2);
         outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
     }
 
@@ -215,14 +215,12 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
             std::vector< std::complex<float> > buff = bpsk_tx->modulate(preamble_vector[j] > 0);
             outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
         }
-        //send bunch of ZEROS as data
         for(int j = 0; j < (int) data_size * 8; j++) {
-            std::vector< std::complex<float> > buff = bpsk_tx->modulate(0);
+            std::vector< std::complex<float> > buff = bpsk_tx->modulate(std::rand() % 2);
             outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
         }
-        //send bunch of ONES as checksum
         for(int j = 0; j < (int) checksum_size * 8; j++) {
-            std::vector< std::complex<float> > buff = bpsk_tx->modulate(1);
+            std::vector< std::complex<float> > buff = bpsk_tx->modulate(std::rand() % 2);
             outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
         }
     }
@@ -240,14 +238,12 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
             std::vector< std::complex<float> > buff = bpsk_tx->modulate(preamble_vector[j] > 0);
             outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
         }
-        //send bunch of ZEROS as data
         for(int j = 0; j < (int) data_size * 8; j++) {
-            std::vector< std::complex<float> > buff = bpsk_tx->modulate(0);
+            std::vector< std::complex<float> > buff = bpsk_tx->modulate(std::rand() % 2);
             outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
         }
-        //send bunch of ONES as checksum
         for(int j = 0; j < (int) checksum_size * 8; j++) {
-            std::vector< std::complex<float> > buff = bpsk_tx->modulate(1);
+            std::vector< std::complex<float> > buff = bpsk_tx->modulate(std::rand() % 2);
             outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
         }
     }
