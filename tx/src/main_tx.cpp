@@ -227,22 +227,6 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
         }
     }
 
-    /*
-    //send total file_size
-    uint8_t max_int = ~0; //i.e. 255
-    size_t count = 0;
-    int i = 0;
-    char * header = (char *) malloc(file_size * sizeof(char));
-    while(count + max_int <= file_size) {
-      header[i] = (char) max_int;
-      count += max_int;
-      i++;
-    }
-    if(count < file_size) {
-        header[i] = (char) (file_size % max_int);
-    }
-    */
-
     for(int i = 0; i < (int) bits_size; i++) {
         std::vector< std::complex<float> > buff = bpsk_tx->modulate(bits[i]);
         outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
