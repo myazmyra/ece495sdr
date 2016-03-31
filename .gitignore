@@ -29,6 +29,10 @@
 
 # Miscellaneous
 *.txt
+*.png
+*.jpg
+*.jpeg
+*.bmp
 *~
 .*~
 *.bry
