@@ -30,10 +30,10 @@ int received = 0;
  **********************************************************************/
 int validate_input(int argc, char** argv);
 void print_help();
-std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder, size_t * file_size);
+std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder);
 void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits);
 void receive(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx);
-void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits, size_t file_size);
+void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits);
 inline float rand_float(float a, float b);
 
 int main(int argc, char** argv) {
@@ -54,8 +54,7 @@ int main(int argc, char** argv) {
                                                       parameters_tx->get_preamble_bytes());
 
     //reads the file, forms packets, converts to bit sequences
-    size_t file_size;
-    std::vector<uint8_t> bits = read_file(packet_encoder, &file_size);
+    std::vector<uint8_t> bits = read_file(packet_encoder);
 
     //initialize BPSK_tx
     BPSK_tx* bpsk_tx = new BPSK_tx(parameters_tx->get_sample_rate(),
@@ -63,7 +62,7 @@ int main(int argc, char** argv) {
                                    parameters_tx->get_spb());
 
     if(mode == std::string("local")) {
-        send_to_file(parameters_tx, bpsk_tx, bits, file_size);
+        send_to_file(parameters_tx, bpsk_tx, bits);
 
         delete bpsk_tx;
         delete packet_encoder;
@@ -151,9 +150,9 @@ void receive(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_
     }
 }
 
-std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder, size_t * file_size) {
+std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder) {
     std::ifstream infile(input_filename, std::ios::ate | std::ios::binary);
-    std::ifstream::pos_type size = 0;
+    std::ifstream::pos_type file_size = 0;
     char* bytes = NULL;
 
     if(infile.is_open() == false) {
@@ -162,21 +161,20 @@ std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder, size_t * fi
     }
 
     std::cout << "Successfully opened input file: " << input_filename << std::endl << std::endl;
-    size = infile.tellg();
-    *file_size = size;
-    bytes = new char[size];
+    file_size = infile.tellg();
+    bytes = new char[file_size];
     infile.seekg(0, std::ios::beg);
-    infile.read(bytes, size);
+    infile.read(bytes, file_size);
     infile.close();
 
     //this will automatically form packets with preamble and checksum and then
     //create bit sequences from bytes
-    std::vector<uint8_t> bits = packet_encoder->form_packets(bytes, (size_t) size);
+    std::vector<uint8_t> bits = packet_encoder->form_packets(bytes, (size_t) file_size);
     delete[] bytes;
     return bits;
 }
 
-void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits, size_t file_size) {
+void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits) {
     std::ofstream outfile(output_filename, std::ofstream::binary);
     if(outfile.is_open() == false) {
         std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
@@ -185,7 +183,7 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
 
     std::cout << "Successfully opened output file: " << output_filename << std::endl << std::endl;
 
-    size_t bits_size = (int) bits.size();
+    size_t bits_size = bits.size();
     size_t spb = parameters_tx->get_spb();
     size_t preamble_size = parameters_tx->get_preamble_size();
     size_t data_size = parameters_tx->get_data_size();
@@ -229,8 +227,21 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
         }
     }
 
-    //send total bytes_size
-
+    /*
+    //send total file_size
+    uint8_t max_int = ~0; //i.e. 255
+    size_t count = 0;
+    int i = 0;
+    char * header = (char *) malloc(file_size * sizeof(char));
+    while(count + max_int <= file_size) {
+      header[i] = (char) max_int;
+      count += max_int;
+      i++;
+    }
+    if(count < file_size) {
+        header[i] = (char) (file_size % max_int);
+    }
+    */
 
     for(int i = 0; i < (int) bits_size; i++) {
         std::vector< std::complex<float> > buff = bpsk_tx->modulate(bits[i]);
