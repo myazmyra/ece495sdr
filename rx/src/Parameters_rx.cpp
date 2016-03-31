@@ -50,7 +50,7 @@ std::vector<int> Parameters_rx::build_lfsr(int m) const {
     //m should be greater than 1 and is a power of 2
     if(m < 2 || ((m - 1) & m) != 0) {
         std::cout << "Invalid LFSR parameter m" << std::endl << std::endl;
-        throw new std::runtime_error("Invalid LFSR parameter m");
+        throw std::runtime_error("Invalid LFSR parameter m");
     }
 
     int n = (1 << m) - 1;

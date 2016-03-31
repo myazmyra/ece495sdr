@@ -13,7 +13,7 @@ PacketEncoder::PacketEncoder(size_t preamble_size,
 
     if(this->preamble_size != preamble_bytes.size()) {
       std::cout << "preamble_size is not equal to preamble_bytes.size()" << std::endl;
-      throw new std::runtime_error("preamble_size is not equal to preamble_bytes.size()");
+      throw std::runtime_error("preamble_size is not equal to preamble_bytes.size()");
     }
 }
 
@@ -24,11 +24,11 @@ PacketEncoder::~PacketEncoder() {
 std::vector<uint8_t> PacketEncoder::form_packets(char * data, size_t file_size) const {
     if(file_size == 0) {
         std::cout << "num_packets cannot be ZERO" << std::endl << std::endl;
-        throw new std::runtime_error("num_packets cannot be ZERO");
+        throw std::runtime_error("num_packets cannot be ZERO");
     }
     if(sizeof(int) > data_size) {
         std::cout << "file_size could not be fitted into one packet" << std::endl;
-        throw new std::runtime_error("file_size could not be fitted into one packet");
+        throw std::runtime_error("file_size could not be fitted into one packet");
     }
 
     std::vector<uint8_t> packets;

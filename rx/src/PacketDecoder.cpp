@@ -83,7 +83,7 @@ std::vector<uint8_t> PacketDecoder::pulses_to_bytes(std::vector<int> const &puls
     std::vector<uint8_t> bytes;
     if(start_index + (int) packet_size * 8 > (int) pulses.size()) {
         std::cout << "Unexpected start_index and pulses.size()" << std::endl;
-        throw new std::runtime_error("Unexpected start_index and pulses.size()");
+        throw std::runtime_error("Unexpected start_index and pulses.size()");
     }
     //get the bytes
     int data_start_index = start_index + preamble_size * 8;

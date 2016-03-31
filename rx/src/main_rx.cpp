@@ -77,10 +77,10 @@ void receive_from_file(Parameters_rx* const parameters_rx,
 
     if(infile.is_open() == false) {
         std::cout << "Unable to open input file: " << input_filename << std::endl << std::endl;
-        throw new std::runtime_error("Unable to open input file: " + input_filename);
+        throw std::runtime_error("Unable to open input file: " + input_filename);
     } else if(outfile.is_open() == false) {
         std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
-        throw new std::runtime_error("Unable to open output file: " + output_filename);
+        throw std::runtime_error("Unable to open output file: " + output_filename);
     }
 
     std::cout << "Successfully opened input file: " << input_filename;

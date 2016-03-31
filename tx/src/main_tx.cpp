@@ -157,7 +157,7 @@ std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder) {
 
     if(infile.is_open() == false) {
         std::cout << "Unable to open input file: " << input_filename << std::endl << std::endl;
-        throw new std::runtime_error("Unable to open input file: " + input_filename);
+        throw std::runtime_error("Unable to open input file: " + input_filename);
     }
 
     std::cout << "Successfully opened input file: " << input_filename << std::endl << std::endl;
@@ -178,7 +178,7 @@ void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, 
     std::ofstream outfile(output_filename, std::ofstream::binary);
     if(outfile.is_open() == false) {
         std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
-        throw new std::runtime_error("Unable to open output file: " + output_filename);
+        throw std::runtime_error("Unable to open output file: " + output_filename);
     }
 
     std::cout << "Successfully opened output file: " << output_filename << std::endl << std::endl;

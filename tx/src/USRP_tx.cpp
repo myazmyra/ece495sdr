@@ -1,7 +1,15 @@
 #include "USRP_tx.hpp"
 
-USRP_tx::USRP_tx(double sample_rate, double f_c, size_t spb) : args(""), ref("internal"), cpufmt("fc32"), otw("sc16"),
-		     											sample_rate(sample_rate), spb(spb), stream_args(cpufmt, otw) { //initialize the constants
+USRP_tx::USRP_tx(double sample_rate,
+								 double f_c,
+								 size_t spb) :
+								 args(""),
+								 ref("internal"),
+								 cpufmt("fc32"),
+								 otw("sc16"),
+		     				 sample_rate(sample_rate),
+								 spb(spb),
+								 stream_args(cpufmt, otw) { //initialize the constants
 
     //create a usrp_tx device
     std::cout << std::endl;
@@ -49,10 +57,10 @@ USRP_tx::~USRP_tx() {
 int USRP_tx::transmit(std::vector< std::complex<float> > buff, size_t N) {
 	if(md.end_of_burst == true) {
 		std::cout << "runtime_error: invalid attempt to transmit after md.end_of_burst is set to true" << std::endl;
-		throw new std::runtime_error("invalid attempt to transmit after md.end_of_burst is set to true");
+		throw std::runtime_error("invalid attempt to transmit after md.end_of_burst is set to true");
 	} else if(md.start_of_burst == true) {
 		std::cout << "runtime_error: invalid attempt to transmit start burst" << std::endl;
-		throw new std::runtime_error("invalid attempt to transmit start burst");
+		throw std::runtime_error("invalid attempt to transmit start burst");
 	}
 	//send the entire buffer
 	tx_stream->send(&buff.front(), N, md);
@@ -62,7 +70,7 @@ int USRP_tx::transmit(std::vector< std::complex<float> > buff, size_t N) {
 void USRP_tx::send_start_of_burst() {
 	if(md.start_of_burst == true) {
 		std::cout << "runtime_error: md.start_of_burst is already set to true" << std::endl;
-		throw new std::runtime_error("md.start_of_burst is already set to true");
+		throw std::runtime_error("md.start_of_burst is already set to true");
 	}
 	md.start_of_burst = true;
 	std::vector< std::complex<float> > buff(spb);
@@ -73,7 +81,7 @@ void USRP_tx::send_start_of_burst() {
 void USRP_tx::send_end_of_burst() {
 	if(md.end_of_burst == true) {
 		std::cout << "runtime_error: md.end_of_burst is already set to true" << std::endl;
-		throw new std::runtime_error("md.end_of_burst is already set to true");
+		throw std::runtime_error("md.end_of_burst is already set to true");
 	}
 	//last time transmitting
 	//send a mini EOB packet
