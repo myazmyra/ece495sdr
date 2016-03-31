@@ -61,26 +61,27 @@ std::vector<uint8_t> PacketEncoder::form_packets(char * data, size_t file_size) 
       std::vector<uint8_t> checksums;
       for(int j = 0; j < (int) checksum_size; j++) {
           uint8_t checksum = 0;
-          for(int k = (int) ((j + 1) * data_size / checksum_size - data_size / checksum_size);
-                  k < (int) ((j + 1) * data_size / checksum_size);
-                  k++) {
-                      if((int) data_size * i + k < (int) file_size) {
-                          uint8_t byte = (uint8_t) header[data_size * i + k];
-                          checksum ^= byte;
-                          packets.push_back(byte);
-                      } else {
+            for(int k = (int) ((j + 1) * header_size / checksum_size - data_size / checksum_size);
+                    k < (int) ((j + 1) * header_size / checksum_size);
+                    k++) {
+                        if((int) data_size * i + k < (int) header_size) {
+                            uint8_t byte = (uint8_t) header[data_size * i + k];
+                            checksum ^= byte;
+                            packets.push_back(byte);
+                        } else {
                           packets.push_back(0);
-                      }
-          }
-          //inverting the checksum will indicate whether it's a header byte or file byte
-          checksums.push_back(~checksum);
-      }
-      //push the checksums
-      for(int j = 0; j < (int) checksum_size; j++) {
+                        }
+            }
+            //inverting the checksum will indicate whether it's a header byte or file byte
+            checksums.push_back(~checksum);
+        }
+        //push the checksums
+        for(int j = 0; j < (int) checksum_size; j++) {
           packets.push_back(checksums[j]);
-      }
+        }
     }
 
+    //encode file bytes
     size_t num_packets = file_size / data_size + ((file_size % data_size) == 0 ? 0 : 1);
     for(int i = 0; i < (int) num_packets; i++) {
         //push the preamble vector
