@@ -1,3 +1,4 @@
+#include <uhd/usrp/multi_usrp.hpp>
 #include <csignal>
 #include <complex>
 #include <stdexcept>

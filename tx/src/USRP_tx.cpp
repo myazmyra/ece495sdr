@@ -41,10 +41,10 @@ USRP_tx::USRP_tx(double sample_rate,
         UHD_ASSERT_THROW(lo_locked.to_bool());
     }
 
-	//create a transmit streamer
+	  //create a transmit streamer
     tx_stream = usrp_tx->get_tx_stream(stream_args);
 
-	//initialize metadata
+	  //initialize metadata
     md.start_of_burst = false;
     md.end_of_burst = false;
 }
