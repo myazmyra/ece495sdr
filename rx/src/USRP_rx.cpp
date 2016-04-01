@@ -2,14 +2,13 @@
 
 USRP_rx::USRP_rx(double sample_rate,
                  size_t spb) :
+                 sample_rate(sample_rate),
+                 spb(spb),
                  args(""),
                  ref("internal"),
                  cpufmt("fc32"),
                  otw("sc16"),
-                 stream_args(cpufmt, otw),
-                 sample_rate(sample_rate),
-                 spb(spb),
-                 buff(spb) {
+                 stream_args(cpufmt, otw) {
     rx_stream = usrp_rx->get_rx_stream();
     stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
     stream_cmd.num_samps = 0;
