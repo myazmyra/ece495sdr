@@ -8,9 +8,9 @@ USRP_rx::USRP_rx(double sample_rate,
                  ref("internal"),
                  cpufmt("fc32"),
                  otw("sc16"),
-                 stream_args(cpufmt, otw) {
-    rx_stream = usrp_rx->get_rx_stream();
-    stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
+                 stream_args(cpufmt, otw),
+                 stream_cmd(uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS) {
+    rx_stream = usrp_rx->get_rx_stream(stream_args);
     stream_cmd.num_samps = 0;
     stream_cmd.stream_now = false;
     stream_cmd.time_spec = uhd::time_spec_t();
@@ -37,7 +37,7 @@ void USRP_rx::issue_stop_streaming() {
     rx_stream->issue_stream_cmd(stream_cmd);
 }
 
-size_t USRP_rx::receiv(std::vector< std::complex<float> > &buff) {
+size_t USRP_rx::receive(std::vector< std::complex<float> > &buff) {
     size_t num_rx_samps = rx_stream->recv(&buff.front(), buff.size(), md, 3.0, false);
     if(md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT) {
         std::cout << "Timeout while streaming" << std::endl;
