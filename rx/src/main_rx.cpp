@@ -68,10 +68,7 @@ int main(int argc, char** argv) {
     if(mode == std::string("local")) {
         std::cout << std::endl; //aesthetic purposes
         receive_from_file(parameters_rx, bpsk_rx, packet_decoder);
-    } else if(mode == std::string("usrp")) {
-        std::cout << std::endl; //aesthetic purposes
-        std::cout << "USRP mode is not implemented yet" << std::endl;
-    } else {
+    } else if(mode != std::string("usrp")) {
         std::cout << std::endl; //aesthetic purposes
         std::cout << "Input validation does not work, please fix" << std::endl;
     }
@@ -82,6 +79,11 @@ int main(int argc, char** argv) {
             usrp_rx,
             bpsk_rx,
             packet_decoder);
+
+    delete parameters_rx;
+    delete bpsk_rx;
+    delete packet_decoder;
+    delete usrp_rx;
 
     std::cout << "Done!" << std::endl << std::endl;
 
@@ -103,22 +105,26 @@ void receive(Parameters_rx * const parameters_rx,
     size_t packet_size = parameters_rx->get_packet_size();
     size_t spb = parameters_rx->get_spb();
 
-    std::vector< std::complex<float> > buff(parameters_rx->get_spb());
+    std::vector< std::complex<float> > buff(spb);
+    std::vector< std::complex<float> > buff_accumulate(spb * 2 * packet_size * 8);
     size_t total_num_rx_samps = 0;
+    usrp_rx->issue_start_streaming();
     while(not stop_signal_called) {
         size_t num_rx_samps = usrp_rx->receive(buff);
         if(num_rx_samps != spb) {
             std::cout << "Did not receive enough samples" << std::endl << std::endl;
             throw std::runtime_error("Did not receive enough samples");
         }
+        buff_accumulate.insert(buff_accumulate.begin() + total_num_rx_samps, buff.begin(), buff.end());
         total_num_rx_samps += num_rx_samps;
         if(total_num_rx_samps == 2 * packet_size * 8) {
             total_num_rx_samps = 0;
-            std::vector<uint8_t> bytes = packet_decoder->decode(bpsk_rx->receive(buff));
+            std::vector<uint8_t> bytes = packet_decoder->decode(bpsk_rx->receive(buff_accumulate));
             outfile.write((char *) &bytes.front(), bytes.size() * sizeof(char));
         }
     }
-
+    usrp_rx->issue_stop_streaming();
+    outfile.close();
 }
 
 
@@ -181,7 +187,7 @@ void receive_from_file(Parameters_rx* const parameters_rx,
 
 void print_help() {
     std::cout << "Usage: " << std::endl << std::endl;
-    std::cout << "./main_rx --mode usrp [infile_path]" << std::endl << std::endl;
+    std::cout << "./main_rx --mode usrp [outfile_path]" << std::endl << std::endl;
     std::cout << "  or" << std::endl << std::endl;
     std::cout << "./main_rx --mode local [infile_path] [outfile_path]" << std::endl << std::endl;
 }
@@ -201,13 +207,15 @@ int validate_input(int argc, char** argv) {
             print_help();
             return 0;
         }
-        input_filename = std::string(argv[3]);
         if(mode == std::string("local") && argc < 5) {
             print_help();
             return 0;
         }
         if(mode == std::string("local")) {
+            input_filename = std::string(argv[3]);
             output_filename = std::string(argv[4]);
+        } else if(mode == std::string("usrp")) {
+            output_filename = std::string(argv[3]);
         }
     }
     return 1;

@@ -66,7 +66,7 @@ std::vector<int> BPSK_rx::receive(std::vector< std::complex<float> > const &rece
     //std::vector<float> normalized_signal = agc(received_signal);
     std::vector<float> normalized_signal(received_signal.size());
     for(int i = 0; i < (int) received_signal.size(); i++) {
-        normalized_signal[i] = real(received_signal[i]);
+        normalized_signal[i] = received_signal[i].real();
     }
 
 
