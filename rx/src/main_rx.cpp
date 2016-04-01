@@ -68,22 +68,28 @@ int main(int argc, char** argv) {
     if(mode == std::string("local")) {
         std::cout << std::endl; //aesthetic purposes
         receive_from_file(parameters_rx, bpsk_rx, packet_decoder);
-    } else if(mode != std::string("usrp")) {
+
+    } else if(mode == std::string("usrp")) {
         std::cout << std::endl; //aesthetic purposes
+        USRP_rx * usrp_rx = new USRP_rx(parameters_rx->get_sample_rate());
+
+        receive(parameters_rx,
+                usrp_rx,
+                bpsk_rx,
+                packet_decoder);
+
+        delete usrp_rx;
+
+    } else {
+        std::cout << std::endl;
         std::cout << "Input validation does not work, please fix" << std::endl;
     }
 
-    USRP_rx * usrp_rx = new USRP_rx(parameters_rx->get_sample_rate());
 
-    receive(parameters_rx,
-            usrp_rx,
-            bpsk_rx,
-            packet_decoder);
 
     delete parameters_rx;
     delete bpsk_rx;
     delete packet_decoder;
-    delete usrp_rx;
 
     std::cout << "Done!" << std::endl << std::endl;
 
@@ -106,7 +112,7 @@ void receive(Parameters_rx * const parameters_rx,
     size_t spb = parameters_rx->get_spb();
 
     std::vector< std::complex<float> > buff(spb);
-    std::vector< std::complex<float> > buff_accumulate(spb * 2 * packet_size * 8);
+    std::vector< std::complex<float> > buff_accumulate;
     size_t total_num_rx_samps = 0;
     usrp_rx->issue_start_streaming();
     while(not stop_signal_called) {
@@ -115,11 +121,14 @@ void receive(Parameters_rx * const parameters_rx,
             std::cout << "Did not receive enough samples" << std::endl << std::endl;
             throw std::runtime_error("Did not receive enough samples");
         }
-        buff_accumulate.insert(buff_accumulate.begin() + total_num_rx_samps, buff.begin(), buff.end());
+        buff_accumulate.insert(buff_accumulate.end(), buff.begin(), buff.end());
         total_num_rx_samps += num_rx_samps;
-        if(total_num_rx_samps == 2 * packet_size * 8) {
+        if(total_num_rx_samps == spb * 2 * packet_size * 8) {
             total_num_rx_samps = 0;
-            std::vector<uint8_t> bytes = packet_decoder->decode(bpsk_rx->receive(buff_accumulate));
+            std::vector<int> pulses = bpsk_rx->receive(buff_accumulate);
+            buff_accumulate.clear();
+            std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
+            if(bytes.size() != 0) std::cout << "success!" << std::endl;
             outfile.write((char *) &bytes.front(), bytes.size() * sizeof(char));
         }
     }
