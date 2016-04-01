@@ -1,3 +1,4 @@
+#include "USRP_rx.hpp"
 #include "Parameters_rx.hpp"
 #include "BPSK_rx.hpp"
 #include "PacketDecoder.hpp"
@@ -24,6 +25,10 @@ std::mutex mtx;
  **********************************************************************/
 int validate_input(int argc, char** argv);
 void print_help();
+void receive(Parameters_rx * const parameters_rx,
+             USRP_rx * const usrp_rx,
+             BPSK_rx * const bpsk,
+             PacketDecoder * const packet_decoder);
 void receive_from_file(Parameters_rx * const parameters_rx,
                        BPSK_rx * const bpsk_rx,
                        PacketDecoder * const packet_decoder);
@@ -34,9 +39,9 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    Parameters_rx* parameters_rx = new Parameters_rx();
+    Parameters_rx * parameters_rx = new Parameters_rx();
 
-    BPSK_rx* bpsk_rx = new BPSK_rx(parameters_rx->get_sample_rate(),
+    BPSK_rx * bpsk_rx = new BPSK_rx(parameters_rx->get_sample_rate(),
                                    parameters_rx->get_f_IF(),
                                    parameters_rx->get_d_factor(),
                                    parameters_rx->get_spb(),
@@ -46,7 +51,7 @@ int main(int argc, char** argv) {
 
     //probably better idea to set LFSR_one and LFSR_two and data_per_packet...
     //...in Parameters_rx object
-    PacketDecoder* packet_decoder = new PacketDecoder(parameters_rx->get_preamble_size(),
+    PacketDecoder * packet_decoder = new PacketDecoder(parameters_rx->get_preamble_size(),
                                                       parameters_rx->get_data_size(),
                                                       parameters_rx->get_checksum_size(),
                                                       parameters_rx->get_packet_size(),
@@ -64,9 +69,31 @@ int main(int argc, char** argv) {
         std::cout << "Input validation does not work, please fix" << std::endl;
     }
 
+    USRP_rx * usrp_rx = new USRP_rx(parameters_rx->get_sample_rate());
+    receive(parameters_rx,
+            usrp_rx,
+            bpsk_rx,
+            packet_decoder);
+
     std::cout << "Done!" << std::endl << std::endl;
 
     return EXIT_SUCCESS;
+}
+
+void receive(Parameters_rx * const parameters_rx,
+             USRP_rx * const usrp_rx,
+             BPSK_rx * const bpsk_rx,
+             PacketDecoder * const packet_decoder) {
+    std::ofstream outfile(output_filename, std::ofstream::binary);
+    if(outfile.is_open() == false) {
+      std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
+      throw std::runtime_error("Unable to open output file: " + output_filename);
+    }
+    std::cout << "Successfully opened ouput file: " << output_filename << std::endl << std::endl;
+    while(not stop_signal_called) {
+      
+    }
+
 }
 
 void receive_from_file(Parameters_rx* const parameters_rx,
@@ -83,8 +110,7 @@ void receive_from_file(Parameters_rx* const parameters_rx,
         throw std::runtime_error("Unable to open output file: " + output_filename);
     }
 
-    std::cout << "Successfully opened input file: " << input_filename;
-    std::cout << std::endl << std::endl;
+    std::cout << "Successfully opened input file: " << input_filename << std::endl << std::endl;
     std::cout << "Successfully opened ouput file: " << output_filename << std::endl << std::endl;
 
     size_t spb_tx = parameters_rx->get_spb_tx();
