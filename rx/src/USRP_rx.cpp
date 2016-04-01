@@ -37,7 +37,7 @@ void USRP_rx::issue_stop_streaming() {
     rx_stream->issue_stream_cmd(stream_cmd);
 }
 
-size_t USRP_rx::receive(std::vector< std::complex<float> > &buff) {
+size_t USRP_rx::receive(std::vector< std::complex<float> > buff) {
     size_t num_rx_samps = rx_stream->recv(&buff.front(), buff.size(), md, 3.0, false);
     /*if(md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT) {
         std::cout << "Timeout while streaming" << std::endl;
