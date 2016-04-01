@@ -14,6 +14,11 @@
 /***********************************************************************
  * Miscellaneous
  **********************************************************************/
+static bool stop_signal_called = false;
+void sig_int_handler(int junk) {
+    stop_signal_called = true;
+}
+
 std::string mode = "";
 std::string input_filename = "";
 std::string output_filename = "";
@@ -25,10 +30,12 @@ std::mutex mtx;
  **********************************************************************/
 int validate_input(int argc, char** argv);
 void print_help();
+
 void receive(Parameters_rx * const parameters_rx,
              USRP_rx * const usrp_rx,
              BPSK_rx * const bpsk,
              PacketDecoder * const packet_decoder);
+
 void receive_from_file(Parameters_rx * const parameters_rx,
                        BPSK_rx * const bpsk_rx,
                        PacketDecoder * const packet_decoder);
@@ -70,6 +77,7 @@ int main(int argc, char** argv) {
     }
 
     USRP_rx * usrp_rx = new USRP_rx(parameters_rx->get_sample_rate());
+
     receive(parameters_rx,
             usrp_rx,
             bpsk_rx,
@@ -79,6 +87,7 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
+
 
 void receive(Parameters_rx * const parameters_rx,
              USRP_rx * const usrp_rx,
@@ -90,11 +99,28 @@ void receive(Parameters_rx * const parameters_rx,
       throw std::runtime_error("Unable to open output file: " + output_filename);
     }
     std::cout << "Successfully opened ouput file: " << output_filename << std::endl << std::endl;
+
+    size_t packet_size = parameters_rx->get_packet_size();
+    size_t spb = parameters_rx->get_spb();
+
+    std::vector< std::complex<float> > buff(parameters_rx->get_spb());
+    size_t total_num_rx_samps = 0;
     while(not stop_signal_called) {
-      
+        size_t num_rx_samps = usrp_rx->receive(buff);
+        if(num_rx_samps != spb) {
+            std::cout << "Did not receive enough samples" << std::endl << std::endl;
+            throw std::runtime_error("Did not receive enough samples");
+        }
+        total_num_rx_samps += num_rx_samps;
+        if(total_num_rx_samps == 2 * packet_size * 8) {
+            total_num_rx_samps = 0;
+            std::vector<uint8_t> bytes = packet_decoder->decode(bpsk_rx->receive(buff));
+            outfile.write((char *) &bytes.front(), bytes.size() * sizeof(char));
+        }
     }
 
 }
+
 
 void receive_from_file(Parameters_rx* const parameters_rx,
                        BPSK_rx* const bpsk_rx,

@@ -21,6 +21,7 @@ class BPSK_rx {
             std::vector<int> preamble_vector);
     ~BPSK_rx();
     std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> const &bytes) const;
+    std::vector<int> receive(std::vector< std::complex<float> > const &buff);
     std::vector<int> receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers);
     std::vector<float> conv(std::vector<float> const &x, std::vector<float> const &h) const;
     std::vector<float> correlate_rx(std::vector<float> const &x, std::vector<float> const &y) const;

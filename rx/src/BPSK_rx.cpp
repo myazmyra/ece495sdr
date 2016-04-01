@@ -61,6 +61,37 @@ std::vector<uint8_t> BPSK_rx::bytes_to_bits(std::vector<uint8_t> const &bytes) c
     return bits;
 }
 
+std::vector<int> BPSK_rx::receive(std::vector< std::complex<float> > const &received_signal) {
+    //go through agc
+    //std::vector<float> normalized_signal = agc(received_signal);
+    std::vector<float> normalized_signal(received_signal.size());
+    for(int i = 0; i < (int) received_signal.size(); i++) {
+        normalized_signal[i] = real(received_signal[i]);
+    }
+
+
+    //demodulate
+    std::vector<float> demodulated_signal = costas_loop(normalized_signal);
+
+    //downsample
+    std::vector<float> downsampled_signal(received_signal.size() / (size_t) d_factor_new);
+    for(int i = 0, n = 0; n < (int) demodulated_signal.size(); i++, n += d_factor_new) {
+        downsampled_signal[i] = demodulated_signal[n];
+    }
+
+    std::vector<float> filtered_signal = conv(h_matched, downsampled_signal);
+    int polarity;
+    start_index = symbol_offset_synch(filtered_signal, &polarity);
+
+    std::vector<int> pulses(downsampled_signal.size() / spb_new);
+    for(int i = 0, n = (spb_new - 1) + start_index; n < (int) filtered_signal.size(); i++, n += spb_new) {
+        pulses[i] = polarity * (filtered_signal[n] > 0 ? 1 : -1);
+    }
+
+    return pulses;
+
+}
+
 std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers) {
 
     //downsample and accumulate everything in one buffer, just like in Matlab
