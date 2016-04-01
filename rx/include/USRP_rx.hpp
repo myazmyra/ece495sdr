@@ -38,7 +38,7 @@ class USRP_rx {
     uhd::stream_args_t stream_args; //stream arguments
     uhd::rx_streamer::sptr rx_stream; //streamer object
     std::vector<std::string> sensor_names; //sensor names to be used when checking for clock locking etc.
-    uhd::tx_metadata_t md; //metadata for the streamer object
+    uhd::rx_metadata_t md; //metadata for the streamer object
     uhd::stream_cmd_t stream_cmd;
 
 };
