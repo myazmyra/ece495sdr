@@ -82,6 +82,7 @@ std::vector<int> BPSK_rx::receive(std::vector< std::complex<float> > const &rece
     std::vector<float> filtered_signal = conv(h_matched, downsampled_signal);
     int polarity;
     start_index = symbol_offset_synch(filtered_signal, &polarity);
+    std::cout << "start_index_bpsk: " << start_index << ", polarity: " << std::endl;
 
     std::vector<int> pulses(downsampled_signal.size() / spb_new);
     for(int i = 0, n = (spb_new - 1) + start_index; n < (int) filtered_signal.size(); i++, n += spb_new) {
@@ -118,6 +119,7 @@ std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::compl
     std::vector<float> filtered_signal = conv(h_matched, downsampled_signal);
     int polarity;
     start_index = symbol_offset_synch(filtered_signal, &polarity);
+    std::cout << "start_index_bpsk: " << start_index << ", polarity: " << polarity << std::endl;
 
     std::vector<int> pulses(downsampled_signal.size() / spb_new);
     for(int i = 0, n = (spb_new - 1) + start_index; n < (int) filtered_signal.size(); i++, n += spb_new) {
@@ -190,6 +192,7 @@ std::vector<float> BPSK_rx::costas_loop(std::vector<float> &r) {
 
         theta -= mu * lpf_sin * lpf_cos;
     }
+    //std::cout << "theta: " << theta << std::endl;
 
     return r;
 
