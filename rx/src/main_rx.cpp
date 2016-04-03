@@ -128,8 +128,15 @@ void receive(Parameters_rx * const parameters_rx,
             std::vector<int> pulses = bpsk_rx->receive(buff_accumulate);
             buff_accumulate.clear();
             std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
-            if(bytes.size() != 0) std::cout << "success!" << std::endl;
+            if(bytes.size() != 0) {
+                std::cout << "bytes.size(): " << bytes.size() << std::endl;
+                for(auto b : bytes) {
+                    std::cout << (char) b;
+                }
+                std::cout << std::endl;
+            }
             outfile.write((char *) &bytes.front(), bytes.size() * sizeof(char));
+            outfile.flush();
         }
     }
     usrp_rx->issue_stop_streaming();

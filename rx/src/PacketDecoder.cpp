@@ -25,9 +25,22 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     std::vector<int> r = correlate(pulses, preamble_vector);
     int start_index = std::distance(r.begin(),
                                     std::max_element(r.begin(), r.end())) + 1;
+
+    if(r[start_index - 1] == 16) {
+        std::cout << "start_index: " << start_index << std::endl;
+        int tmp = start_index - (int) preamble_vector.size();
+        tmp = tmp < 0 ? tmp + (int) preamble_vector.size() : tmp;
+        for(int i = tmp; i < tmp + 16; i++) {
+            std::cout << pulses[i] << ", ";
+        }
+        std::cout << std::endl;
+    }
+
     start_index -=  (int) preamble_vector.size();
     start_index = start_index < 0 ? start_index + (int) preamble_vector.size() :
                   start_index;
+
+
 
     //std::cout << "start_index_decoder: " << start_index << std::endl;
 
@@ -99,7 +112,7 @@ std::vector<uint8_t> PacketDecoder::pulses_to_bytes(std::vector<int> const &puls
         }
         bytes.push_back(byte);
     }
-    if(streaming_started && total_size != 0) {
+    if(streaming_started) {
         received_size += data_size;
     }
 
@@ -130,24 +143,28 @@ std::vector<uint8_t> PacketDecoder::pulses_to_bytes(std::vector<int> const &puls
                 total_size |= (((int) bytes[j]) << shift_size);
                 shift_size += 8;
             }
-            std::cout << "total_size: " << total_size << std::endl;
+            std::vector<uint8_t> empty_bytes;
+            return empty_bytes;
+        } else if(checksum == (uint8_t) (~0) && total_size != 0) {
+            std::vector<uint8_t> empty_bytes;
+            return empty_bytes;
         } else if(checksum != 0) {
             std::vector<uint8_t> empty_bytes;
             return empty_bytes;
         }
     }
-    //if everything went well
+    //if first packet checksums pass
+    if(not streaming_started && total_size != 0) {
+        std::cout << "total_size: " << total_size << std::endl;
+        streaming_started = true;
+        received_size = data_size;
+    }
     //remove redundant bytes if needed
     if(streaming_ended == false && received_size >= total_size) {
         streaming_ended = true;
         bytes.erase(bytes.end() - (received_size - total_size), bytes.end());
     }
-    //if first packet checksums pass
-    if(not streaming_started) {
-        streaming_started = true;
-        received_size = data_size;
-    }
-    if(streaming_started) {
+    if(streaming_started && total_size != 0) {
         return bytes;
     }
     std::vector<uint8_t> empty_bytes;
