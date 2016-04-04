@@ -26,7 +26,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
     int start_index = std::distance(r.begin(),
                                     std::max_element(r.begin(), r.end())) + 1;
 
-    if(r[start_index - 1] == 16) {
+    /*if(r[start_index - 1] == 16) {
         std::cout << "start_index: " << start_index << std::endl;
         int tmp = start_index - (int) preamble_vector.size();
         tmp = tmp < 0 ? tmp + (int) preamble_vector.size() : tmp;
@@ -34,7 +34,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
             std::cout << pulses[i] << ", ";
         }
         std::cout << std::endl;
-    }
+    }*/
 
     start_index -=  (int) preamble_vector.size();
     start_index = start_index < 0 ? start_index + (int) preamble_vector.size() :

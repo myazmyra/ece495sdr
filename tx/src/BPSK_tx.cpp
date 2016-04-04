@@ -10,8 +10,8 @@ BPSK_tx::BPSK_tx(double sample_rate,
     double T_s = 1 / sample_rate;
 
     for(int n = 0; n < (int) spb; n++) {
-        positive.push_back(std::cos(2 * M_PI * (f_c) * n * T_s + 0.9));
-        negative.push_back(std::cos(2 * M_PI * (f_c) * n * T_s + 0.9));
+        positive.push_back(0.03 + 0.03 * std::cos(2 * M_PI * (f_c) * n * T_s + 0.9));
+        negative.push_back(0.03 + 0.03 * (-std::cos(2 * M_PI * (f_c) * n * T_s + 0.9)));
     }
 
 }

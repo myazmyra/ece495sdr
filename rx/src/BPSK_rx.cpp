@@ -15,7 +15,9 @@ BPSK_rx::BPSK_rx(double sample_rate,
     this->d_factor_new = d_factor_new;
     this->spb_new = spb_new;
 
-    //power_desired = 0.5;
+    power_desired = 0.5;
+    mu_agc = 0.1;
+
     start_index = 0;
 
     //250 S/s == 100 MS / s * 2.5 / M
@@ -61,14 +63,19 @@ std::vector<uint8_t> BPSK_rx::bytes_to_bits(std::vector<uint8_t> const &bytes) c
     return bits;
 }
 
-std::vector<int> BPSK_rx::receive(std::vector< std::complex<float> > const &received_signal) {
-    //go through agc
-    //std::vector<float> normalized_signal = agc(received_signal);
-    std::vector<float> normalized_signal(received_signal.size());
-    for(int i = 0; i < (int) received_signal.size(); i++) {
-        normalized_signal[i] = received_signal[i].real();
+std::vector<int> BPSK_rx::receive(std::vector< std::complex<float> > const &complex_signal) {
+
+    //remove the DC component
+    float mean = std::accumulate(complex_signal.begin(), complex_signal.end(),
+                 std::complex<float>(0.0, 0.0)).real() / (float) complex_signal.size();
+
+    std::vector<float> received_signal(complex_signal.size());
+    for(int i = 0; i < (int) complex_signal.size(); i++) {
+        received_signal[i] = complex_signal[i].real() - mean;
     }
 
+    //go through agc
+    std::vector<float> normalized_signal = agc(received_signal);
 
     //demodulate
     std::vector<float> demodulated_signal = costas_loop(normalized_signal);
@@ -103,9 +110,15 @@ std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::compl
         }
     }
 
+    //remove the dc component
+    float mean = std::accumulate(received_signal.begin(), received_signal.end(), 0.0) / (float) received_signal.size();
+    for(int i = 0; i < (int) received_signal.size(); i++) {
+        received_signal[i] -= mean;
+    }
+
     //go through agc
-    //std::vector<float> normalized_signal = agc(received_signal);
-    std::vector<float> normalized_signal = received_signal;
+    std::vector<float> normalized_signal = agc(received_signal);
+    //std::vector<float> normalized_signal = received_signal;
 
     //demodulate
     std::vector<float> demodulated_signal = costas_loop(normalized_signal);
@@ -160,6 +173,20 @@ std::vector<float> BPSK_rx::correlate_rx(std::vector<float> const &x, std::vecto
     return xcorr;
 }
 
+std::vector<float> BPSK_rx::agc(std::vector<float> &r) {
+
+    static float g = 1.0;
+
+    for(int i = 0; i < (int) r.size(); i++) {
+        r[i] = g * r[i];
+        float update = (g > 0 ? 1.0 : -1.0) * (r[i] * r[i] - power_desired);
+        g -= mu_agc * update;
+    }
+
+    return r;
+
+}
+
 std::vector<float> BPSK_rx::costas_loop(std::vector<float> &r) {
     int start_index = 0, end_index = FILTER_SIZE - 1;
 
@@ -191,7 +218,7 @@ std::vector<float> BPSK_rx::costas_loop(std::vector<float> &r) {
 
         theta -= mu * lpf_sin * lpf_cos;
     }
-    //std::cout << "theta: " << theta << std::endl;
+    std::cout << "theta: " << theta << std::endl;
 
     return r;
 

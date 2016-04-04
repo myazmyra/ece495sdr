@@ -2,6 +2,9 @@
 #include <stdexcept>
 #include <vector>
 #include <complex>
+#include <numeric>
+#include <functional>
+#include <algorithm>
 
 #ifndef _Included_BPSK_rx
 #define _Included_BPSK_rx
@@ -25,7 +28,7 @@ class BPSK_rx {
     std::vector<int> receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers);
     std::vector<float> conv(std::vector<float> const &x, std::vector<float> const &h) const;
     std::vector<float> correlate_rx(std::vector<float> const &x, std::vector<float> const &y) const;
-    //void agc(std::vector<float>& received_signal);
+    std::vector<float> agc(std::vector<float> &received_signal);
     std::vector<float> costas_loop(std::vector<float> &normalized_signal);
     int symbol_offset_synch(std::vector<float> const &filtered_signal, int* polarity) const;
 
@@ -43,7 +46,8 @@ class BPSK_rx {
     size_t spb_new; //spb / decimation_factor
 
     //agc parameters
-    //float power_desired;
+    float power_desired;
+    float mu_agc;
 
     //symbol offset detector parameters
     //int recompute_period;
