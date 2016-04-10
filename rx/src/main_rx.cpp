@@ -48,21 +48,27 @@ int main(int argc, char** argv) {
 
     Parameters_rx * parameters_rx = new Parameters_rx();
 
-    BPSK_rx * bpsk_rx = new BPSK_rx(parameters_rx->get_sample_rate(),
-                                   parameters_rx->get_f_IF(),
-                                   parameters_rx->get_d_factor(),
-                                   parameters_rx->get_spb(),
-                                   parameters_rx->get_d_factor_new(),
-                                   parameters_rx->get_spb_new(),
-                                   parameters_rx->get_preamble_vector());
+    BPSK_rx * bpsk_rx = new BPSK_rx(parameters_rx->get_packet_size(),
+                                    parameters_rx->get_sample_rate(),
+                                    parameters_rx->get_f_IF(),
+                                    parameters_rx->get_d_factor(),
+                                    parameters_rx->get_spb(),
+                                    parameters_rx->get_d_factor_new(),
+                                    parameters_rx->get_spb_new(),
+                                    parameters_rx->get_preamble_vector(),
+                                    parameters_rx->get_power_desired(),
+                                    parameters_rx->get_mu_agc(),
+                                    parameters_rx->get_mu_pll(),
+                                    parameters_rx->get_filter_size(),
+                                    parameters_rx->get_h_lp_pll());
 
     //probably better idea to set LFSR_one and LFSR_two and data_per_packet...
     //...in Parameters_rx object
     PacketDecoder * packet_decoder = new PacketDecoder(parameters_rx->get_preamble_size(),
-                                                      parameters_rx->get_data_size(),
-                                                      parameters_rx->get_checksum_size(),
-                                                      parameters_rx->get_packet_size(),
-                                                      parameters_rx->get_preamble_vector());
+                                                       parameters_rx->get_data_size(),
+                                                       parameters_rx->get_checksum_size(),
+                                                       parameters_rx->get_packet_size(),
+                                                       parameters_rx->get_preamble_vector());
 
     //maybe use enums later
     if(mode == std::string("local")) {

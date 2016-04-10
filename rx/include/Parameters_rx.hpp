@@ -6,6 +6,8 @@
 #ifndef _Included_Parameters_rx
 #define _Included_Parameters_rx
 
+#define FILTER_SIZE 32
+
 class Parameters_rx {
 
   public:
@@ -26,6 +28,11 @@ class Parameters_rx {
     size_t get_checksum_size() const;
     size_t get_packet_size() const;
     std::vector<int> get_preamble_vector() const;
+    float get_power_desired() const;
+    float mu_agc() const;
+    float mu_pll() const;
+    size_t get_filter_size() const;
+    std::vector<float> get_h_lp_pll() const;
 
   private:
 
@@ -48,6 +55,13 @@ class Parameters_rx {
     std::vector<int> preamble_vector;
     std::vector<int> build_lfsr(int m) const;
 
+    //agc parameters
+    float power_desired, mu_agc;
+
+    //costas_loop parameters
+    float mu_pll;
+    size_t filter_size;
+    std::vector<float> h_lp_pll;
 
 };
 

@@ -23,6 +23,22 @@ Parameters_rx::Parameters_rx() {
   //build_lfsr returns 2^m - 1 length vector, pad -1 to this vector
   preamble_vector.push_back(-1);
 
+  //agc parameters
+  power_desired = 0.5;
+  mu_agc = 0.1;
+
+  //costas loop parameters
+  mu_pll = 0.15;
+  float const h_lp_pll_tmp[FILTER_SIZE] = {0.0187, 0.0106, 0.0086, 0.0035, -0.0026, -0.0069, -0.0068, -0.0011,
+                                           0.0100, 0.0249, 0.0411, 0.0568, 0.0702, 0.0807, 0.0878, 0.0913,
+                                           0.0913, 0.0878, 0.0807, 0.0702, 0.0568, 0.0411, 0.0249, 0.0100,
+                                           -0.0011, -0.0068, -0.0069, -0.0026, 0.0035, 0.0086, 0.0106, 0.0187};
+
+  filter_size = (size_t) FILTER_SIZE;
+  for(int i = 0; i < (int) filter_size; i++) {
+    h_lp_pll.push_back(h_lp_pll_tmp[i]);
+  }
+
   //TODO: validate the parameters if they satisfy design logic
 
 }
@@ -45,6 +61,11 @@ size_t Parameters_rx::get_data_size() const { return data_size; }
 size_t Parameters_rx::get_checksum_size() const { return checksum_size; }
 size_t Parameters_rx::get_packet_size() const { return packet_size; }
 std::vector<int> Parameters_rx::get_preamble_vector() const { return preamble_vector; }
+float Parameters_rx::get_power_desired() const { return power_desired; }
+float Parameters_rx::mu_agc() const { return mu_agc; }
+float Parameters_rx::mu_pll() const { return mu_pll; }
+size_t Parameters_rx::get_filter_size() const { return filter_size; }
+std::vector<float> Parameters_rx::get_h_lp_pll() const { return h_lp_pll; }
 
 std::vector<int> Parameters_rx::build_lfsr(int m) const {
     //m should be greater than 1 and is a power of 2
