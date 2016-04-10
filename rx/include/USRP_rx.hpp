@@ -16,7 +16,7 @@
 class USRP_rx {
  public:
 
-    USRP_rx(double sample_rate);
+    USRP_rx(double sample_rate_tx, size_t spb_tx, int d_factor);
     ~USRP_rx();
     size_t receive(std::vector< std::complex<float> > &buff);
     void issue_start_streaming();
@@ -24,7 +24,10 @@ class USRP_rx {
 
  private:
 
-    double const sample_rate; //sample_rate between the PC and Motherboard
+    double const sample_rate_tx; //sample_rate between the PC and Motherboard
+    size_t spb_tx;
+    int d_factor;
+    std::vector< std::complex<float> > buff;
 
     std::string const &args; //single uhd device address args (example: "addr=192.168.10.2", "serial=901", "type=usrp2")
     std::string const &ref; //clock reference (internal, external, mimo, gpsdo)

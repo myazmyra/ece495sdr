@@ -1,7 +1,12 @@
 #include "USRP_rx.hpp"
 
-USRP_rx::USRP_rx(double sample_rate) :
-                 sample_rate(sample_rate),
+USRP_rx::USRP_rx(double sample_rate_tx,
+                 size_t spb_tx,
+                 int d_factor) :
+                 sample_rate_tx(sample_rate_tx),
+                 spb_tx(spb_tx),
+                 d_factor(d_factor),
+                 buff(spb_tx),
                  args("serial=F2A017"),
                  ref("internal"),
                  cpufmt("fc32"),
@@ -20,13 +25,13 @@ USRP_rx::USRP_rx(double sample_rate) :
     std::cout << boost::format("Using Device: %s") % usrp_rx->get_pp_string() << std::endl;
 
     //set the sample rate
-    if(sample_rate <= 0.0){
+    if(sample_rate_tx <= 0.0) {
         std::cerr << "Please specify a valid sample rate" << std::endl;
         throw std::runtime_error("Please specify a valid sample rate");
     }
 
-    std::cout << boost::format("Setting RX Rate: %f Msps...") % (sample_rate / 1e6) << std::endl;
-    usrp_rx->set_rx_rate(sample_rate);
+    std::cout << boost::format("Setting RX Rate: %f Msps...") % (sample_rate_tx / 1e6) << std::endl;
+    usrp_rx->set_rx_rate(sample_rate_tx);
     std::cout << boost::format("Actual RX Rate: %f Msps...") % (usrp_rx->get_rx_rate() / 1e6) << std::endl << std::endl;
 
     double setup_time = 2.0;
@@ -77,7 +82,7 @@ void USRP_rx::issue_stop_streaming() {
     rx_stream->issue_stream_cmd(stream_cmd);
 }
 
-size_t USRP_rx::receive(std::vector< std::complex<float> > &buff) {
+size_t USRP_rx::receive(std::vector< std::complex<float> > &buff_downsampled) {
     size_t num_rx_samps = rx_stream->recv(&buff.front(), buff.size(), md, 3.0, false);
 
     if(md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT) {
@@ -93,6 +98,14 @@ size_t USRP_rx::receive(std::vector< std::complex<float> > &buff) {
         throw std::runtime_error(error);
     }
 
+    if(num_rx_samps != spb_tx) {
+        std::cout << "Did not receive enough samples" << std::endl << std::endl;
+        throw std::runtime_error("Did not receive enough samples");
+    }
 
-    return num_rx_samps;
+    for(int i = 0; i < (int) buff_downsampled.size(); i++) {
+        buff_downsampled[i] = buff[i * d_factor];
+    }
+
+    return num_rx_samps / d_factor;
 }

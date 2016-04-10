@@ -16,7 +16,7 @@ BPSK_rx::BPSK_rx(double sample_rate,
     this->spb_new = spb_new;
 
     power_desired = 0.5;
-    mu_agc = 0.1;
+    mu_agc = 0.03;
 
     start_index = 0;
 
@@ -69,13 +69,17 @@ std::vector<int> BPSK_rx::receive(std::vector< std::complex<float> > const &comp
     float mean = std::accumulate(complex_signal.begin(), complex_signal.end(),
                  std::complex<float>(0.0, 0.0)).real() / (float) complex_signal.size();
 
+    //std::cout << "mean: " << mean << std::endl;
+
     std::vector<float> received_signal(complex_signal.size());
     for(int i = 0; i < (int) complex_signal.size(); i++) {
         received_signal[i] = complex_signal[i].real() - mean;
     }
 
+
     //go through agc
     std::vector<float> normalized_signal = agc(received_signal);
+
 
     //demodulate
     std::vector<float> demodulated_signal = costas_loop(normalized_signal);
@@ -192,7 +196,7 @@ std::vector<float> BPSK_rx::costas_loop(std::vector<float> &r) {
 
     static float theta = 0;
 
-    float mu = 0.0015;
+    float mu = 0.15;
 
     double T_s = 1 / sample_rate;
     for(int n = 0; n < (int) r.size(); n++) {
@@ -218,7 +222,7 @@ std::vector<float> BPSK_rx::costas_loop(std::vector<float> &r) {
 
         theta -= mu * lpf_sin * lpf_cos;
     }
-    std::cout << "theta: " << theta << std::endl;
+    //std::cout << "theta: " << theta << std::endl;
 
     return r;
 

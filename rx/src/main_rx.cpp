@@ -71,7 +71,9 @@ int main(int argc, char** argv) {
 
     } else if(mode == std::string("usrp")) {
         std::cout << std::endl; //aesthetic purposes
-        USRP_rx * usrp_rx = new USRP_rx(parameters_rx->get_sample_rate());
+        USRP_rx * usrp_rx = new USRP_rx(parameters_rx->get_sample_rate_tx(),
+                                        parameters_rx->get_spb_tx(),
+                                        parameters_rx->get_d_factor());
 
         receive(parameters_rx,
                 usrp_rx,
@@ -128,13 +130,14 @@ void receive(Parameters_rx * const parameters_rx,
             std::vector<int> pulses = bpsk_rx->receive(buff_accumulate);
             buff_accumulate.clear();
             std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
-            if(bytes.size() != 0) {
-                std::cout << "bytes.size(): " << bytes.size() << std::endl;
+            /*if(bytes.size() != 0) {
+                //std::cout << "bytes.size(): " << bytes.size() << std::endl;
                 for(auto b : bytes) {
                     std::cout << (char) b;
                 }
                 std::cout << std::endl;
             }
+            */
             outfile.write((char *) &bytes.front(), bytes.size() * sizeof(char));
             outfile.flush();
         }

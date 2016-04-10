@@ -30,7 +30,7 @@ std::vector<uint8_t> PacketDecoder::decode(std::vector<int> pulses) {
         std::cout << "start_index: " << start_index << std::endl;
         int tmp = start_index - (int) preamble_vector.size();
         tmp = tmp < 0 ? tmp + (int) preamble_vector.size() : tmp;
-        for(int i = tmp; i < tmp + 16; i++) {
+        for(int i = tmp; i < tmp + (int) preamble_size * 8; i++) {
             std::cout << pulses[i] << ", ";
         }
         std::cout << std::endl;
