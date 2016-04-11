@@ -26,9 +26,9 @@ BPSK_rx::BPSK_rx(size_t packet_size,
                  received_signal(2 * packet_size * spb),
                  downsampled_signal(2 * packet_size * spb_new),
                  pulses(downsampled_signal.size() / spb_new),
+                 h_lp_pll(h_lp_pll),
                  z_sin(filter_size),
-                 z_cos(filter_size),
-                 h_lp_pll(h_lp_pll) {
+                 z_cos(filter_size) {
 
     //build the matched filter
     for(int n = 0; n < (int) spb_new; n++) {

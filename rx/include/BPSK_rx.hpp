@@ -54,12 +54,16 @@ class BPSK_rx {
     int const d_factor_new; // < decimation_factor, used to reduce the load on pc
     size_t const spb_new; //spb / decimation_factor
 
+    //intermediate vectors
+    std::vector<float> received_signal;
+    std::vector<float> downsampled_signal;
+    std::vector<int> pulses;
+
     //matched filter
     std::vector<float> h_matched;
 
     //agc parameters
-    float const power_desired;
-    float const mu_agc;
+    float const power_desired, mu_agc;
 
     //symbol offset detector parameters
     std::vector<float> preamble_detect; //vector used in detecting start_index
@@ -68,12 +72,6 @@ class BPSK_rx {
     float mu_pll;
     size_t filter_size;
     std::vector<float> h_lp_pll, z_sin, z_cos;
-
-
-    //intermediate vectors
-    std::vector<float> received_signal;
-    std::vector<float> downsampled_signal;
-    std::vector<int> pulses;
 
 };
 

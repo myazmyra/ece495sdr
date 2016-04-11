@@ -62,8 +62,8 @@ size_t Parameters_rx::get_checksum_size() const { return checksum_size; }
 size_t Parameters_rx::get_packet_size() const { return packet_size; }
 std::vector<int> Parameters_rx::get_preamble_vector() const { return preamble_vector; }
 float Parameters_rx::get_power_desired() const { return power_desired; }
-float Parameters_rx::mu_agc() const { return mu_agc; }
-float Parameters_rx::mu_pll() const { return mu_pll; }
+float Parameters_rx::get_mu_agc() const { return mu_agc; }
+float Parameters_rx::get_mu_pll() const { return mu_pll; }
 size_t Parameters_rx::get_filter_size() const { return filter_size; }
 std::vector<float> Parameters_rx::get_h_lp_pll() const { return h_lp_pll; }
 
