@@ -26,7 +26,9 @@ class PacketDecoder {
 
       size_t preamble_size,  data_size,  checksum_size,  packet_size;
 
-      std::vector<int> preamble_vector, previous_pulses;
+      std::vector<int> preamble_vector;
+      
+      std::vector<int> previous_pulses;
 
       size_t total_size, received_size;
       bool streaming_started, streaming_ended;

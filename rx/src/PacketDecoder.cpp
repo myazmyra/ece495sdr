@@ -13,7 +13,7 @@ PacketDecoder::PacketDecoder(size_t preamble_size,
                              total_size(0),
                              received_size(0),
                              streaming_started(false),
-                             streaming_started(false) {
+                             streaming_ended(false) {
 }
 
 PacketDecoder::~PacketDecoder() {

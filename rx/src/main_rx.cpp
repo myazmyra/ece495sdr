@@ -120,7 +120,7 @@ void receive(Parameters_rx * const parameters_rx,
     size_t spb = parameters_rx->get_spb();
 
     std::vector< std::complex<float> > buff(spb);
-    std::vector< std::complex<float> > buff_accumulate;
+    std::vector< std::complex<float> > buff_accumulate(spb * 2 * packet_size * 8);
     size_t total_num_rx_samps = 0;
     usrp_rx->issue_start_streaming();
     while(not stop_signal_called) {
@@ -129,21 +129,12 @@ void receive(Parameters_rx * const parameters_rx,
             std::cout << "Did not receive enough samples" << std::endl << std::endl;
             throw std::runtime_error("Did not receive enough samples");
         }
-        buff_accumulate.insert(buff_accumulate.end(), buff.begin(), buff.end());
+        buff_accumulate.insert(buff_accumulate.begin() + total_num_rx_samps, buff.begin(), buff.end());
         total_num_rx_samps += num_rx_samps;
         if(total_num_rx_samps == spb * 2 * packet_size * 8) {
             total_num_rx_samps = 0;
             std::vector<int> pulses = bpsk_rx->receive(buff_accumulate);
-            buff_accumulate.clear();
             std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
-            /*if(bytes.size() != 0) {
-                //std::cout << "bytes.size(): " << bytes.size() << std::endl;
-                for(auto b : bytes) {
-                    std::cout << (char) b;
-                }
-                std::cout << std::endl;
-            }
-            */
             outfile.write((char *) &bytes.front(), bytes.size() * sizeof(char));
             outfile.flush();
         }
