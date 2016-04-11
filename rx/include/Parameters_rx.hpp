@@ -29,8 +29,8 @@ class Parameters_rx {
     size_t get_packet_size() const;
     std::vector<int> get_preamble_vector() const;
     float get_power_desired() const;
-    float mu_agc() const;
-    float mu_pll() const;
+    float get_mu_agc() const;
+    float get_mu_pll() const;
     size_t get_filter_size() const;
     std::vector<float> get_h_lp_pll() const;
 
