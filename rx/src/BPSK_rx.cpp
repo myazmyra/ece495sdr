@@ -28,6 +28,12 @@ BPSK_rx::BPSK_rx(size_t packet_size,
                  z_sin(filter_size),
                  z_cos(filter_size) {
 
+    std::cout << "mu_agc: " << filter_size << std::endl;
+    for(int i = 0; i < (int) h_lp_pll.size(); i++) {
+        std::cout << h_lp_pll[i] << ", ";
+    }
+    std::cout << std::endl;
+
     //build the matched filter
     for(int n = 0; n < (int) spb_new; n++) {
         h_matched.push_back(1.0);
@@ -57,25 +63,34 @@ BPSK_rx::~BPSK_rx() {
 
 size_t BPSK_rx::receive(std::vector< std::complex<float> > const &complex_signal, std::vector<int> &pulses) {
 
-    /*
+
     //remove the DC component
-    float mean = std::accumulate(complex_signal.begin(), complex_signal.end(),
-                 std::complex<float>(0.0, 0.0)).real() / (float) complex_signal.size();
-    */
+    //float sum = std::accumulate(complex_signal.begin(), complex_signal.end(),
+    //             std::complex<float>(0.0, 0.0)).real();
+    //float mean = sum / (float) complex_signal.size();
 
     static std::vector<float> received_signal(spb * 2 * packet_size * 8);
     if(complex_signal.size() != received_signal.size()) {
-        std::cout << "complex_signal.size(): " << complex_signal.size() << std::endl;
-        std::cout << "received_signal.size(): " << received_signal.size() << std::endl;
         std::cout << "Unexpected error: received_signal.size() and complex_signal.size() don't match" << std::endl;
         throw std::runtime_error("Unexpected error: received_signal.size() and complex_signal.size() don't match");
     }
     for(int i = 0; i < (int) complex_signal.size(); i++) {
-        received_signal[i] = complex_signal[i].real(); // - mean;
+        received_signal[i] = complex_signal[i].real();// - mean;
     }
+    //float sq_sum = std::inner_product(received_signal.begin(), received_signal.end(), received_signal.begin(), 0) - mean * mean;
+    //std::cout << "mean: " << mean << std::endl;
+    //std::cout << "var: " << sq_sum << std::endl;
 
     //go through agc
     agc(received_signal);
+    //for(int i = 0; i < (int) received_signal.size(); i++) {
+    //    std::cout << received_signal[i] << ", ";
+    //}
+    //std::cout << std::endl;
+    float mean = std::accumulate(received_signal.begin(), received_signal.end(), 0) / (float) received_signal.size();
+    float sq_sum = std::inner_product(received_signal.begin(), received_signal.end(), received_signal.begin(), 0) / (float) received_signal.size() - mean * mean;
+    std::cout << "new mean: " << mean << std::endl;
+    std::cout << "new var: " << sq_sum << std::endl;
 
     //demodulate
     costas_loop(received_signal);
@@ -87,13 +102,15 @@ size_t BPSK_rx::receive(std::vector< std::complex<float> > const &complex_signal
     }
 
     static std::vector<float> filtered_signal(h_matched.size() + downsampled_signal.size() - 1);
-    std::cout << &filtered_signal.front() << std::endl;
     size_t filtered_signal_size = conv(h_matched, downsampled_signal, filtered_signal);
     int polarity, start_index = symbol_offset_synch(filtered_signal, &polarity);
+    //std::cout << "start_index: " << start_index << ", polarity: " << polarity << std::endl;
 
     for(int i = 0, n = (spb_new - 1) + start_index; n < (int) filtered_signal_size; i++, n += spb_new) {
         pulses[i] = polarity * (filtered_signal[n] > 0 ? 1 : -1);
+        //std::cout << filtered_signal[n] << ", ";
     }
+    //std::cout << std::endl;
 
     return pulses.size();
 
@@ -214,8 +231,9 @@ void BPSK_rx::costas_loop(std::vector<float> &r) {
 
         r[n] = lpf_cos;
 
-        theta -= mu_pll * lpf_sin * lpf_cos;
+        theta -= 140 * mu_pll * lpf_sin * lpf_cos;
     }
+    std::cout << "theta: " << theta << std::endl;
 
 }
 
