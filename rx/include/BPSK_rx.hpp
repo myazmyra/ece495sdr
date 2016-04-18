@@ -28,17 +28,16 @@ class BPSK_rx {
             size_t filter_size,
             std::vector<float> h_lp_pll);
     ~BPSK_rx();
-    std::vector<int> receive(std::vector< std::complex<float> > const &buff);
-    std::vector<int> receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers);
+    size_t receive(std::vector< std::complex<float> > const &buff, std::vector<int> &pulses);
+    //size_t receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers, std::vector<int> &pulses);
 
   private:
 
     //function declarations
-    std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> const &bytes) const;
-    std::vector<float> conv(std::vector<float> const &x, std::vector<float> const &h) const;
-    std::vector<float> correlate_rx(std::vector<float> const &x, std::vector<float> const &y) const;
-    std::vector<float> agc(std::vector<float> &received_signal);
-    std::vector<float> costas_loop(std::vector<float> &normalized_signal);
+    size_t conv(std::vector<float> const &x, std::vector<float> const &h, std::vector<float> &y) const;
+    size_t correlate(std::vector<float> const &x, std::vector<float> const &y, std::vector<float> &rxy) const;
+    void agc(std::vector<float> &received_signal);
+    void costas_loop(std::vector<float> &normalized_signal);
     int symbol_offset_synch(std::vector<float> const &filtered_signal, int* polarity) const;
 
     //used to compute sample time recomputation period
@@ -46,6 +45,7 @@ class BPSK_rx {
     //const float clock_drift_rate;
 
     //basic rx parameters
+    size_t packet_size;
     double const sample_rate;
     double const T_s;
     double const f_IF;
@@ -53,11 +53,6 @@ class BPSK_rx {
     size_t const spb;
     int const d_factor_new; // < decimation_factor, used to reduce the load on pc
     size_t const spb_new; //spb / decimation_factor
-
-    //intermediate vectors
-    std::vector<float> received_signal;
-    std::vector<float> downsampled_signal;
-    std::vector<int> pulses;
 
     //matched filter
     std::vector<float> h_matched;

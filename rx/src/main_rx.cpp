@@ -35,10 +35,11 @@ void receive(Parameters_rx * const parameters_rx,
              USRP_rx * const usrp_rx,
              BPSK_rx * const bpsk,
              PacketDecoder * const packet_decoder);
-
+/*
 void receive_from_file(Parameters_rx * const parameters_rx,
                        BPSK_rx * const bpsk_rx,
                        PacketDecoder * const packet_decoder);
+*/
 
 int main(int argc, char** argv) {
 
@@ -73,7 +74,7 @@ int main(int argc, char** argv) {
     //maybe use enums later
     if(mode == std::string("local")) {
         std::cout << std::endl; //aesthetic purposes
-        receive_from_file(parameters_rx, bpsk_rx, packet_decoder);
+        //receive_from_file(parameters_rx, bpsk_rx, packet_decoder);
 
     } else if(mode == std::string("usrp")) {
         std::cout << std::endl; //aesthetic purposes
@@ -116,8 +117,13 @@ void receive(Parameters_rx * const parameters_rx,
     }
     std::cout << "Successfully opened ouput file: " << output_filename << std::endl << std::endl;
 
+    size_t data_size = parameters_rx->get_data_size();
     size_t packet_size = parameters_rx->get_packet_size();
     size_t spb = parameters_rx->get_spb();
+
+    //buffers to be used
+    std::vector<int> pulses(2 * packet_size * 8);
+    std::vector<uint8_t> bytes(2 * data_size);
 
     std::vector< std::complex<float> > buff(spb);
     std::vector< std::complex<float> > buff_accumulate(spb * 2 * packet_size * 8);
@@ -129,13 +135,13 @@ void receive(Parameters_rx * const parameters_rx,
             std::cout << "Did not receive enough samples" << std::endl << std::endl;
             throw std::runtime_error("Did not receive enough samples");
         }
-        buff_accumulate.insert(buff_accumulate.begin() + total_num_rx_samps, buff.begin(), buff.end());
+        std::copy(buff.begin(), buff.end(), buff_accumulate.begin() + total_num_rx_samps);
         total_num_rx_samps += num_rx_samps;
         if(total_num_rx_samps == spb * 2 * packet_size * 8) {
             total_num_rx_samps = 0;
-            std::vector<int> pulses = bpsk_rx->receive(buff_accumulate);
-            std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
-            outfile.write((char *) &bytes.front(), bytes.size() * sizeof(char));
+            size_t pulses_size = bpsk_rx->receive(buff_accumulate, pulses);
+            size_t bytes_size = packet_decoder->decode(pulses, pulses_size, bytes);
+            outfile.write((char *) &bytes.front(), bytes_size * sizeof(char));
             outfile.flush();
         }
     }
@@ -143,7 +149,7 @@ void receive(Parameters_rx * const parameters_rx,
     outfile.close();
 }
 
-
+/*
 void receive_from_file(Parameters_rx* const parameters_rx,
                        BPSK_rx* const bpsk_rx,
                        PacketDecoder* packet_decoder) {
@@ -200,6 +206,7 @@ void receive_from_file(Parameters_rx* const parameters_rx,
     infile.close();
     outfile.close();
 }
+*/
 
 void print_help() {
     std::cout << "Usage: " << std::endl << std::endl;

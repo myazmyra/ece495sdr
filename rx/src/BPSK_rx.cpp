@@ -13,6 +13,7 @@ BPSK_rx::BPSK_rx(size_t packet_size,
                  float mu_pll,
                  size_t filter_size,
                  std::vector<float> h_lp_pll) :
+                 packet_size(packet_size),
                  sample_rate(sample_rate),
                  T_s(1 / sample_rate),
                  f_IF(f_IF),
@@ -20,9 +21,6 @@ BPSK_rx::BPSK_rx(size_t packet_size,
                  spb(spb),
                  d_factor_new(d_factor_new),
                  spb_new(spb_new),
-                 received_signal(2 * packet_size * spb),
-                 downsampled_signal(2 * packet_size * spb_new),
-                 pulses(downsampled_signal.size() / spb_new),
                  power_desired(power_desired),
                  mu_agc(mu_agc),
                  mu_pll(mu_pll),
@@ -45,12 +43,11 @@ BPSK_rx::BPSK_rx(size_t packet_size,
 
     //build the preamble detector by convolving with matched filter...
     //...then truncating the transient points from left and right
-    std::vector<float> xcorr = conv(h_matched, preamble_vector_upsampled);
+    std::vector<float> v_conv(h_matched.size() + preamble_vector_upsampled.size() - 1);
+    size_t v_conv_size = conv(h_matched, preamble_vector_upsampled, v_conv);
     preamble_detect.insert(preamble_detect.begin(),
-                           xcorr.begin() + (h_matched.size() - 1),
-                           xcorr.end() - (h_matched.size() - 1));
-
-
+                           v_conv.begin() + (h_matched.size() - 1),
+                           v_conv.begin() + v_conv_size - (h_matched.size() - 1));
 
 }
 
@@ -58,51 +55,52 @@ BPSK_rx::~BPSK_rx() {
     std::cout << "Destroying the BPSK_rx object..." << std::endl << std::endl;
 }
 
-std::vector<uint8_t> BPSK_rx::bytes_to_bits(std::vector<uint8_t> const &bytes) const {
-    std::vector<uint8_t> bits;
-    for(int i = 0; i < (int) bytes.size(); i++) {
-        uint8_t byte = bytes[i];
-        for(int j = 0; j < 8; j++) {
-            bits.push_back(byte & 1);
-            byte >>= 1;
-        }
-    }
-    return bits;
-}
+size_t BPSK_rx::receive(std::vector< std::complex<float> > const &complex_signal, std::vector<int> &pulses) {
 
-std::vector<int> BPSK_rx::receive(std::vector< std::complex<float> > const &complex_signal) {
-
+    /*
     //remove the DC component
     float mean = std::accumulate(complex_signal.begin(), complex_signal.end(),
                  std::complex<float>(0.0, 0.0)).real() / (float) complex_signal.size();
+    */
 
+    static std::vector<float> received_signal(spb * 2 * packet_size * 8);
+    if(complex_signal.size() != received_signal.size()) {
+        std::cout << "complex_signal.size(): " << complex_signal.size() << std::endl;
+        std::cout << "received_signal.size(): " << received_signal.size() << std::endl;
+        std::cout << "Unexpected error: received_signal.size() and complex_signal.size() don't match" << std::endl;
+        throw std::runtime_error("Unexpected error: received_signal.size() and complex_signal.size() don't match");
+    }
     for(int i = 0; i < (int) complex_signal.size(); i++) {
-        received_signal[i] = complex_signal[i].real() - mean;
+        received_signal[i] = complex_signal[i].real(); // - mean;
     }
 
     //go through agc
-    std::vector<float> normalized_signal = agc(received_signal);
+    agc(received_signal);
 
     //demodulate
-    std::vector<float> demodulated_signal = costas_loop(normalized_signal);
+    costas_loop(received_signal);
 
     //downsample
-    for(int i = 0, n = 0; n < (int) demodulated_signal.size(); i++, n += d_factor_new) {
-        downsampled_signal[i] = demodulated_signal[n];
+    static std::vector<float> downsampled_signal(spb_new * 2 * packet_size * 8);
+    for(int i = 0, n = 0; n < (int) received_signal.size(); i++, n += d_factor_new) {
+        downsampled_signal[i] = received_signal[n];
     }
 
-    std::vector<float> filtered_signal = conv(h_matched, downsampled_signal);
+    static std::vector<float> filtered_signal(h_matched.size() + downsampled_signal.size() - 1);
+    std::cout << &filtered_signal.front() << std::endl;
+    size_t filtered_signal_size = conv(h_matched, downsampled_signal, filtered_signal);
     int polarity, start_index = symbol_offset_synch(filtered_signal, &polarity);
 
-    for(int i = 0, n = (spb_new - 1) + start_index; n < (int) filtered_signal.size(); i++, n += spb_new) {
+    for(int i = 0, n = (spb_new - 1) + start_index; n < (int) filtered_signal_size; i++, n += spb_new) {
         pulses[i] = polarity * (filtered_signal[n] > 0 ? 1 : -1);
     }
 
-    return pulses;
+    return pulses.size();
 
 }
 
-std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers) {
+/*
+size_t BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers, std::vector<int> &pulses) {
 
     //downsample and accumulate everything in one buffer
     for(int i = 0; i < (int) buffers.size(); i++) {
@@ -137,9 +135,13 @@ std::vector<int> BPSK_rx::receive_from_file(std::vector< std::vector< std::compl
 
     return pulses;
 }
+*/
 
-std::vector<float> BPSK_rx::conv(std::vector<float> const &x, std::vector<float> const &h) const {
-    std::vector<float> y(x.size() + h.size() - 1);
+size_t BPSK_rx::conv(std::vector<float> const &x, std::vector<float> const &h, std::vector<float> &y) const {
+    if(x.size() + h.size() - 1 > y.size()) {
+        std::cout << "Not enough space in y to store conv(x, h) result" << std::endl;
+        throw std::runtime_error("Not enough space in y to store conv(x, h) result");
+    }
     for(int i = 0; i < (int) y.size(); i++) {
         int ii = i;
         float tmp = 0.0;
@@ -151,12 +153,15 @@ std::vector<float> BPSK_rx::conv(std::vector<float> const &x, std::vector<float>
             y[i] = tmp;
         }
     }
-    return y;
+    return x.size() + h.size() - 1;
 }
 
-std::vector<float> BPSK_rx::correlate_rx(std::vector<float> const &x, std::vector<float> const &y) const {
-    std::vector<float> xcorr(x.size() + y.size() - 1);
-    for(int i = 0; i < (int) xcorr.size(); i++) {
+size_t BPSK_rx::correlate(std::vector<float> const &x, std::vector<float> const &y, std::vector<float> &rxy) const {
+    if(x.size() + y.size() - 1 > rxy.size()) {
+        std::cout << "Not enough space to store correlate(x, y) result" << std::endl;
+        throw std::runtime_error("Not enough space in rxy to store correlate(x, y) result");
+    }
+    for(int i = 0; i < (int) rxy.size(); i++) {
         int ii = ((int) y.size()) - i - 1;
         float tmp = 0.0;
         for(int j = 0; j < (int) x.size(); j++) {
@@ -165,12 +170,12 @@ std::vector<float> BPSK_rx::correlate_rx(std::vector<float> const &x, std::vecto
             }
             ii++;
         }
-        xcorr[i] = tmp;
+        rxy[i] = tmp;
     }
-    return xcorr;
+    return x.size() + y.size() - 1;
 }
 
-std::vector<float> BPSK_rx::agc(std::vector<float> &r) {
+void BPSK_rx::agc(std::vector<float> &r) {
 
     static float g = 1.0;
 
@@ -180,11 +185,10 @@ std::vector<float> BPSK_rx::agc(std::vector<float> &r) {
         g -= mu_agc * update;
     }
 
-    return r;
-
 }
 
-std::vector<float> BPSK_rx::costas_loop(std::vector<float> &r) {
+void BPSK_rx::costas_loop(std::vector<float> &r) {
+
     //z_sin and z_cos are circular vectors
     static int start_index = 0, end_index = filter_size - 1;
     static float theta = 0.0;
@@ -213,22 +217,24 @@ std::vector<float> BPSK_rx::costas_loop(std::vector<float> &r) {
         theta -= mu_pll * lpf_sin * lpf_cos;
     }
 
-    return r;
-
 }
 
 int BPSK_rx::symbol_offset_synch(std::vector<float> const &filtered_signal, int * const polarity) const {
-    std::vector<float> xcorr = correlate_rx(filtered_signal, preamble_detect);
+    static std::vector<float> rxy(filtered_signal.size() + preamble_detect.size() - 1);
+    if(filtered_signal.size() + preamble_detect.size() - 1 > rxy.size()) {
+        rxy.resize(filtered_signal.size() + preamble_detect.size() - 1);
+    }
+    size_t rxy_size = correlate(filtered_signal, preamble_detect, rxy);
     int max_index = 0;
-    float max_value = std::abs(xcorr[0]);
+    float max_value = std::abs(rxy[0]);
 
-    for(int i = 1; i < (int) xcorr.size(); i++) {
-        if(std::abs(xcorr[i]) > max_value) {
+    for(int i = 1; i < (int) rxy_size; i++) {
+        if(std::abs(rxy[i]) > max_value) {
             max_index = i;
-            max_value = std::abs(xcorr[i]);
+            max_value = std::abs(rxy[i]);
         }
     }
 
-    *polarity = xcorr[max_index] > 0 ? 1 : -1;
+    *polarity = rxy[max_index] > 0 ? 1 : -1;
     return (max_index + 1) % (int) spb_new;
 }

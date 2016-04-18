@@ -16,22 +16,26 @@ class PacketDecoder {
                   std::vector<int> preamble_vector);
 
     ~PacketDecoder();
-    std::vector<uint8_t> decode(std::vector<int> bits);
+    size_t decode(std::vector<int> const &pulses, size_t pulses_size, std::vector<uint8_t> &bytes);
 
   private:
 
-      std::vector<int> correlate(std::vector<int> const &x, std::vector<int> const &y) const;
-      std::vector<uint8_t> pulses_to_bytes(std::vector<int> const &pulses, int start_index);
-      std::vector<uint8_t> bytes_to_bits(std::vector<uint8_t> const &packets) const;
+    size_t pulses_to_bytes(std::vector<int> const &pulses, int start_index, std::vector<uint8_t> &bytes, int insert_index);
+    size_t correlate(std::vector<int> const &x, std::vector<int> const &y, std::vector<int> &rxy) const;
 
-      size_t preamble_size,  data_size,  checksum_size,  packet_size;
+    //packet parameters
+    size_t preamble_size,  data_size,  checksum_size,  packet_size;
 
-      std::vector<int> preamble_vector;
-      
-      std::vector<int> previous_pulses;
+    //vector to hold preamble pulses used in packet_start detection
+    std::vector<int> preamble_vector;
 
-      size_t total_size, received_size;
-      bool streaming_started, streaming_ended;
+    //vector that holds yet undecoded pulses
+    std::vector<int> previous_pulses;
+    size_t previous_pulses_size;
+
+    //variables to determine start and end of streaming, file_size
+    size_t total_size, received_size;
+    bool streaming_started, streaming_ended;
 
 };
 
