@@ -22,8 +22,6 @@ void sig_int_handler(int junk) {
 std::string receive_filename;
 std::string output_filename;
 
-bool idle = false;
-
 /***********************************************************************
  * Function Declarations
  **********************************************************************/
@@ -66,10 +64,10 @@ int main(int argc, char** argv) {
                                     parameters_rx->get_d_factor(),
                                     parameters_rx->get_spb());
 
-    while(not stop_signal_called) {
-        transmit(usrp_rx);
-        receive(parameters_rx, usrp_rx, bpsk_rx, packet_decoder);
-    }
+    //while(not stop_signal_called) {
+    transmit(usrp_rx);
+    receive(parameters_rx, usrp_rx, bpsk_rx, packet_decoder);
+    //}
 
     delete parameters_rx;
     delete bpsk_rx;
@@ -123,14 +121,13 @@ void receive(Parameters_rx * const parameters_rx,
     usrp_rx->issue_stop_streaming();
     outfile.close();
     output_filename.clear();
-    idle = true;
 }
 
 void transmit(USRP_rx * const usrp_rx) {
     receive_filename = "img.jpeg";
     output_filename = "reconstructed.txt";
-    for(int i = 0; i < 8; i++) {
+    for(int i = 0; i < ((int) receive_filename.size() <= 8 ? (int) receive_filename.size() : 8); i++) {
         usrp_rx->transmit((uint8_t) receive_filename[i]);
     }
-    idle = false;
+    receive_filename.clear();
 }
