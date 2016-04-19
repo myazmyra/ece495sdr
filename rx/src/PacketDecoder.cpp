@@ -14,6 +14,7 @@ PacketDecoder::PacketDecoder(size_t preamble_size,
                              previous_pulses_size(0),
                              total_size(0),
                              received_size(0),
+                             bytes_lost(0),
                              streaming_started(false),
                              streaming_ended(false) {
 }
@@ -104,13 +105,8 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
                 j++) {
                     uint8_t byte = (uint8_t) bytes[(int) bytes_size + j];
                     checksum ^= byte;
-                    //std::cout << (int) checksum << std::endl;
         }
         if(checksum == (uint8_t) (~0) && total_size == 0) {
-            /*std::cout << (int) checksum << std::endl;
-            for(int p = 0; p < (int) packet_size * 8; p++) std::cout << pulses[start_index + p] << ", ";
-            std::cout << std::endl;
-            */
             int shift_size = 0;
             //TX and RX machines should have same number of bytes per int
             for(int j = 0; j < (int) sizeof(int); j++) {
@@ -120,8 +116,8 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
             return 0;
         } else if(checksum == (uint8_t) (~0) && total_size != 0) {
             return 0;
-        } else if(checksum != 0) {
-            std::cout << "fail" << std::endl;
+        } else if(streaming_started == true && streaming_ended == false && checksum != 0) {
+            bytes_lost += data_size;
             return 0;
         }
     }
@@ -135,11 +131,11 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
     //remove redundant bytes if needed
     if(streaming_started == true && streaming_ended == false && received_size >= total_size) {
         streaming_ended = true;
+        std::cout << "Total bytes lost: " << bytes_lost << std::endl << std::endl;
         std::cout << "File streaming ended" << std::endl << std::endl;
         return data_size - (received_size - total_size);
     }
     if(streaming_started == true && total_size != 0) {
-        std::cout << "success" << std::endl;
         return data_size;
     }
     return 0;

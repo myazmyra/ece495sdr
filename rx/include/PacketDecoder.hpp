@@ -34,7 +34,7 @@ class PacketDecoder {
     size_t previous_pulses_size;
 
     //variables to determine start and end of streaming, file_size
-    size_t total_size, received_size;
+    size_t total_size, received_size, bytes_lost;
     bool streaming_started, streaming_ended;
 
 };

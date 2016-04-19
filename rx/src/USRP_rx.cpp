@@ -2,10 +2,12 @@
 
 USRP_rx::USRP_rx(double sample_rate_tx,
                  size_t spb_tx,
-                 int d_factor) :
+                 int d_factor,
+                 size_t spb) :
                  sample_rate_tx(sample_rate_tx),
                  spb_tx(spb_tx),
                  d_factor(d_factor),
+                 spb(spb),
                  buff(spb_tx),
                  args("serial=F2A017"),
                  ref("internal"),
@@ -82,7 +84,7 @@ void USRP_rx::issue_stop_streaming() {
     rx_stream->issue_stream_cmd(stream_cmd);
 }
 
-size_t USRP_rx::receive(std::vector< std::complex<float> > &buff_downsampled) {
+size_t USRP_rx::receive(std::vector< std::complex<float> > &buff_downsampled, size_t total_num_rx_samps) {
     size_t num_rx_samps = rx_stream->recv(&buff.front(), buff.size(), md, 3.0, false);
 
     if(md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT) {
@@ -103,9 +105,9 @@ size_t USRP_rx::receive(std::vector< std::complex<float> > &buff_downsampled) {
         throw std::runtime_error("Did not receive enough samples");
     }
 
-    for(int i = 0; i < (int) buff_downsampled.size(); i++) {
-        buff_downsampled[i] = buff[i * d_factor];
+    for(int i = 0; i < (int) spb; i++) {
+        buff_downsampled[(int) total_num_rx_samps + i] = buff[i * d_factor];
     }
 
-    return num_rx_samps / d_factor;
+    return spb;
 }
