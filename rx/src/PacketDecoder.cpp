@@ -61,7 +61,7 @@ size_t PacketDecoder::decode(std::vector<int> const &pulses, size_t pulses_size,
     return bytes_size;
 }
 
-size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_index, std::vector<uint8_t> &bytes, int insert_index)  {
+size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_index, std::vector<uint8_t> &bytes, size_t bytes_size)  {
     if(streaming_ended) {
         return 0;
     }
@@ -73,14 +73,14 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
     //get the bytes
     int data_start_index = start_index + preamble_size * 8;
     int data_end_index = data_start_index + data_size * 8;
-    for(int i = data_start_index; i < data_end_index; i += 8) { //iterate through bytes
+    for(int i = data_start_index, insert_index = (int) bytes_size; i < data_end_index; i += 8, insert_index++) { //iterate through bytes
         uint8_t byte = 0;
         uint8_t mask = 1;
         for(int j = i; j < i + 8; j++) { //iterate through bits
             byte |= ((pulses[j] > 0) ? mask : 0);
             mask <<= 1;
         }
-        bytes[insert_index++] = byte;
+        bytes[insert_index] = byte;
     }
     if(streaming_started) {
         received_size += data_size;
@@ -102,7 +102,7 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
         for(int j = (int) ((i + 1) * data_size / checksum_size - data_size / checksum_size);
                 j < (int) ((i + 1) * data_size / checksum_size);
                 j++) {
-                    uint8_t byte = (uint8_t) bytes[j];
+                    uint8_t byte = (uint8_t) bytes[(int) bytes_size + j];
                     checksum ^= byte;
                     //std::cout << (int) checksum << std::endl;
         }
@@ -121,7 +121,7 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
         } else if(checksum == (uint8_t) (~0) && total_size != 0) {
             return 0;
         } else if(checksum != 0) {
-            std::cout << "failed checksum" << std::endl;
+            std::cout << "fail" << std::endl;
             return 0;
         }
     }
@@ -139,6 +139,7 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
         return data_size - (received_size - total_size);
     }
     if(streaming_started == true && total_size != 0) {
+        std::cout << "success" << std::endl;
         return data_size;
     }
     return 0;

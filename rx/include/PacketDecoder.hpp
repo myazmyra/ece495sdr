@@ -20,7 +20,7 @@ class PacketDecoder {
 
   private:
 
-    size_t pulses_to_bytes(std::vector<int> const &pulses, int start_index, std::vector<uint8_t> &bytes, int insert_index);
+    size_t pulses_to_bytes(std::vector<int> const &pulses, int start_index, std::vector<uint8_t> &bytes, size_t bytes_size);
     size_t correlate(std::vector<int> const &x, std::vector<int> const &y, std::vector<int> &rxy) const;
 
     //packet parameters
