@@ -117,11 +117,11 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
                 total_size |= (((int) bytes[j]) << shift_size);
                 shift_size += 8;
             }
-            std::cout << "total_size: " << total_size << std::endl;
             return 0;
         } else if(checksum == (uint8_t) (~0) && total_size != 0) {
             return 0;
         } else if(checksum != 0) {
+            std::cout << "failed checksum" << std::endl;
             return 0;
         }
     }
@@ -138,7 +138,7 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
         std::cout << "File streaming ended" << std::endl << std::endl;
         return data_size - (received_size - total_size);
     }
-    if(streaming_started && total_size != 0) {
+    if(streaming_started == true && total_size != 0) {
         return data_size;
     }
     return 0;
