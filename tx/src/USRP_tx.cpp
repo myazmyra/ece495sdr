@@ -7,9 +7,10 @@ USRP_tx::USRP_tx(double sample_rate,
 								 ref("internal"),
 								 cpufmt("fc32"),
 								 otw("sc16"),
-		     				 sample_rate(sample_rate),
+		     				 	 sample_rate(sample_rate),
 								 spb(spb),
-								 stream_args(cpufmt, otw) { //initialize the constants
+								 stream_args(cpufmt, otw),
+								 uc_addr(0x10) { //initialize the constants
 
     //create a usrp_tx device
     std::cout << std::endl;
@@ -36,7 +37,7 @@ USRP_tx::USRP_tx(double sample_rate,
     if (std::find(sensor_names.begin(), sensor_names.end(), "lo_locked") != sensor_names.end()) {
 		//allow for some time, need more sleeping time for SBX
 		boost::this_thread::sleep(boost::posix_time::seconds(2));
-        uhd::sensor_value_t lo_locked = usrp_tx->get_tx_sensor("lo_locked",0);
+        uhd::sensor_value_t lo_locked = usrp_tx->get_tx_sensor("lo_locked", 0);
         std::cout << boost::format("Checking TX: %s ...") % lo_locked.to_pp_string() << std::endl << std::endl;
         UHD_ASSERT_THROW(lo_locked.to_bool());
     }
@@ -47,6 +48,9 @@ USRP_tx::USRP_tx(double sample_rate,
 	  //initialize metadata
     md.start_of_burst = false;
     md.end_of_burst = false;
+
+	tx_dboard_iface = usrp_tx->get_tx_dboard_iface();
+	eeprom_bus = tx_dboard_iface->eeprom16();
 }
 
 USRP_tx::~USRP_tx() {
@@ -54,7 +58,7 @@ USRP_tx::~USRP_tx() {
     std::cout << "Destroying the USRP_tx object..." << std::endl << std::endl;
 }
 
-int USRP_tx::transmit(std::vector< std::complex<float> > buff, size_t N) {
+int USRP_tx::transmit(std::vector< std::complex<float> > &buff, size_t num_tx_samps) {
 	if(md.end_of_burst == true) {
 		std::cout << "runtime_error: invalid attempt to transmit after md.end_of_burst is set to true" << std::endl;
 		throw std::runtime_error("invalid attempt to transmit after md.end_of_burst is set to true");
@@ -63,8 +67,13 @@ int USRP_tx::transmit(std::vector< std::complex<float> > buff, size_t N) {
 		throw std::runtime_error("invalid attempt to transmit start burst");
 	}
 	//send the entire buffer
-	tx_stream->send(&buff.front(), N, md);
+	tx_stream->send(&buff.front(), num_tx_samps, md);
   	return 1;
+}
+
+uint8_t USRP_tx::receive() {
+	uhd::byte_vector_t i2c_buffer = eeprom_bus->read_i2c(uc_addr, 1);
+	return i2c_buffer[0];
 }
 
 void USRP_tx::send_start_of_burst() {

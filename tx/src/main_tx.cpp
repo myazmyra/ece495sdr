@@ -19,29 +19,19 @@ void sig_int_handler(int junk) {
 
 std::string mode = "";
 std::string input_filename = "";
-std::string output_filename = "";
 
 std::mutex mtx;
-int transmitted = 0;
-int received = 0;
+bool idle = true;
+std::vector<uint8_t> bits;
 
 /***********************************************************************
  * Function Declarations
  **********************************************************************/
-int validate_input(int argc, char** argv);
-void print_help();
 std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder);
-void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits);
-void receive(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx);
-void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits);
-inline float rand_float(float a, float b);
+void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx);
+void receive(Parameters_tx * const parameters_tx, PacketEncoder * const packet_encoder, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx);
 
 int main(int argc, char** argv) {
-
-    //input validation
-    if(validate_input(argc, argv) == 0) {
-        return EXIT_FAILURE;
-    }
 
     //initialize Parameters
     Parameters_tx* parameters_tx = new Parameters_tx();
@@ -53,29 +43,13 @@ int main(int argc, char** argv) {
                                                       parameters_tx->get_packet_size(),
                                                       parameters_tx->get_preamble_bytes());
 
-    //reads the file, forms packets, converts to bit sequences
-    std::vector<uint8_t> bits = read_file(packet_encoder);
-
     //initialize BPSK_tx
     BPSK_tx* bpsk_tx = new BPSK_tx(parameters_tx->get_sample_rate(),
                                    parameters_tx->get_f_c(),
                                    parameters_tx->get_spb());
 
-    if(mode == std::string("local")) {
-        send_to_file(parameters_tx, bpsk_tx, bits);
-
-        delete bpsk_tx;
-        delete packet_encoder;
-        delete parameters_tx;
-
-        std::cout << "Done!" << std::endl << std::endl;
-
-        return EXIT_SUCCESS;
-    }
-
-    //else, broadcast mode, transmit through usrp
     //give thread priority to this thread
-	  //uhd::set_thread_priority_safe();
+	uhd::set_thread_priority_safe();
     std::cout << std::endl;
 
     //initialize USRP_tx
@@ -89,18 +63,12 @@ int main(int argc, char** argv) {
 
     //create threads and start them
     //transmit data
-    std::thread transmit_thread(transmit, parameters_tx, usrp_tx, bpsk_tx, bits);
+    std::thread transmit_thread(transmit, parameters_tx, usrp_tx, bpsk_tx);
+    //receive data
+    std::thread receive_thread(receive, parameters_tx, packet_encoder, usrp_tx, bpsk_tx);
 
-    //receive data (feedback on channel quality)
-    std::thread receive_thread(receive, parameters_tx, usrp_tx, bpsk_tx);
-
-    transmit_thread.join();
     receive_thread.join();
-
-    std::cout << std::endl << std::endl;
-    std::cout << "Transmit thread called: " << transmitted << " times" << std::endl;
-    std::cout << "Receive thread called: " << received << " times" << std::endl;
-    std::cout << std::endl;
+    transmit_thread.join();
 
     delete usrp_tx;
     delete bpsk_tx;
@@ -112,41 +80,50 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits) {
-
-    int i = 0;
-    int size = (int) bits.size();
+void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx) {
 
     std::vector< std::complex<float> > positive = bpsk_tx->modulate(1);
     std::vector< std::complex<float> > negative = bpsk_tx->modulate(0);
-
     size_t spb = parameters_tx->get_spb();
+    int i = 0;
 
     //start burst
     usrp_tx->send_start_of_burst();
-
     while(not stop_signal_called) {
         mtx.lock();
-        usrp_tx->transmit(bits[i] ? positive : negative, spb);
-        transmitted++;
+        if(idle == true) {
+            usrp_tx->transmit(positive, spb);
+        } else {
+            usrp_tx->transmit(bits[i] ? positive : negative, spb);
+            i++;
+            if(i == (int) bits.size()) {
+                i = 0;
+                idle = true;
+            }
+        }
         mtx.unlock();
-        i++;
-        i %= size;
     }
 
     //stop transmission
     usrp_tx->send_end_of_burst();
 }
 
-void receive(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx) {
-    while(not stop_signal_called) {
+void receive(Parameters_tx * const parameters_tx, PacketEncoder * const packet_encoder, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx) {
+    while(not stop_signal_called && idle == true) {
         //receive some stuff from the microcontroller
         mtx.lock();
-        //usrp_tx.receive();
-        //change the parameters
-        //parameters_tx.change(double bit_rate, usrp_tx, bpsk_tx);
-        received++;
+        uint8_t data = usrp_tx->receive();
         mtx.unlock();
+        if(data != 0) {
+            for(int i = 0; i < 7; i++) {
+                mtx.lock();
+                input_filename.push_back((char) usrp_tx->receive());
+                mtx.unlock();
+            }
+            bits = read_file(packet_encoder);
+            idle = false;
+        }
+        boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
 }
 
@@ -172,138 +149,4 @@ std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder) {
     std::vector<uint8_t> bits = packet_encoder->form_packets(bytes, (size_t) file_size);
     delete[] bytes;
     return bits;
-}
-
-void send_to_file(Parameters_tx * const parameters_tx, BPSK_tx * const bpsk_tx, std::vector<uint8_t> const &bits) {
-    std::ofstream outfile(output_filename, std::ofstream::binary);
-    if(outfile.is_open() == false) {
-        std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
-        throw std::runtime_error("Unable to open output file: " + output_filename);
-    }
-
-    std::cout << "Successfully opened output file: " << output_filename << std::endl << std::endl;
-
-    size_t bits_size = bits.size();
-    size_t spb = parameters_tx->get_spb();
-    size_t preamble_size = parameters_tx->get_preamble_size();
-    size_t data_size = parameters_tx->get_data_size();
-    size_t checksum_size = parameters_tx->get_checksum_size();
-    size_t packet_size = parameters_tx->get_packet_size();
-    std::vector<int> preamble_vector = parameters_tx->get_preamble_vector();
-
-    //send random values to simulate real life
-    int n_rand_bits = 330;
-    for(int i = 0; i < n_rand_bits; i++) {
-        std::vector< std::complex<float> > buff;
-        for(int j = 0; j < (int) spb; j++) {
-            buff.push_back(rand_float(-1.0, 1.0));
-        }
-    }
-
-    //send ONES to synchronize PLL
-    int n_synch_bits = 4 * packet_size * 8;
-    for(int i = 0; i < n_synch_bits; i++) {
-        std::vector< std::complex<float> > buff = bpsk_tx->modulate(std::rand() % 2);
-        outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
-    }
-
-    //send redundant empty packets with wrong checksums, to synchronize decoder
-    int pre_redundant_packets = 4;
-    for(int i = 0; i < pre_redundant_packets; i++) {
-        //send preamble
-        for(int j = 0; j < (int) preamble_size * 8; j++) {
-            std::vector< std::complex<float> > buff = bpsk_tx->modulate(preamble_vector[j] > 0);
-            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
-        }
-        for(int j = 0; j < (int) data_size * 8; j++) {
-            std::vector< std::complex<float> > buff = bpsk_tx->modulate(std::rand() % 2);
-            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
-        }
-        for(int j = 0; j < (int) checksum_size * 8; j++) {
-            std::vector< std::complex<float> > buff = bpsk_tx->modulate(std::rand() % 2);
-            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
-        }
-    }
-
-    for(int i = 0; i < (int) bits_size; i++) {
-        std::vector< std::complex<float> > buff = bpsk_tx->modulate(bits[i]);
-        outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
-    }
-
-    //send redundant empty packets with wrong checksums, to help receiver not lose synchronization
-    int post_redundant_packets = 4;
-    for(int i = 0; i < post_redundant_packets; i++) {
-        //send preamble
-        for(int j = 0; j < (int) preamble_size * 8; j++) {
-            std::vector< std::complex<float> > buff = bpsk_tx->modulate(preamble_vector[j] > 0);
-            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
-        }
-        for(int j = 0; j < (int) data_size * 8; j++) {
-            std::vector< std::complex<float> > buff = bpsk_tx->modulate(std::rand() % 2);
-            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
-        }
-        for(int j = 0; j < (int) checksum_size * 8; j++) {
-            std::vector< std::complex<float> > buff = bpsk_tx->modulate(std::rand() % 2);
-            outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
-        }
-    }
-
-    int remaining_n_rand_bits = (((packet_size * 8) -
-                                (n_rand_bits % (packet_size * 8))) %
-                                (packet_size * 8))
-                                + packet_size * 8;
-
-
-    for(int i = 0; i < remaining_n_rand_bits; i++) {
-        std::vector< std::complex<float> > buff;
-        for(int j = 0; j < (int) spb; j++) {
-            buff.push_back(rand_float(-1.0, 1.0));
-        }
-        outfile.write((char*) &(buff.front()), spb * sizeof(std::complex<float>));
-    }
-
-    outfile.close();
-
-    std::cout << "Done writing to output file: " << output_filename << std::endl << std::endl;
-}
-
-
-inline float rand_float(float a, float b) {
-    float random = ((float) std::rand()) / ((float) RAND_MAX);
-    float diff = b - a;
-    float r = random * diff;
-    return a + r;
-}
-
-void print_help() {
-    std::cout << "Usage: " << std::endl << std::endl;
-    std::cout << "./main_tx.o --mode usrp [infile_path]" << std::endl << std::endl;
-    std::cout << "  or" << std::endl << std::endl;
-    std::cout << "./main_tx.o --mode local [infile_path] [outfile_path]" << std::endl << std::endl;
-}
-
-int validate_input(int argc, char** argv) {
-    if(argc < 4) {
-        print_help();
-        return 0;
-    } else {
-        if(std::string(argv[1]) != std::string("--mode")) {
-            print_help();
-            return 0;
-        }
-        mode = std::string(argv[2]);
-        if(mode != std::string("usrp") && mode != std::string("local")) {
-            print_help();
-            return 0;
-        }
-        input_filename = std::string(argv[3]);
-        if(mode == std::string("local") && argc < 5) {
-            print_help();
-            return 0;
-        }
-        if(mode == std::string("local")) {
-            output_filename = std::string(argv[4]);
-        }
-    }
-    return 1;
 }

@@ -29,7 +29,6 @@ class BPSK_rx {
             std::vector<float> h_lp_pll);
     ~BPSK_rx();
     size_t receive(std::vector< std::complex<float> > const &buff, std::vector<int> &pulses);
-    //size_t receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers, std::vector<int> &pulses);
 
   private:
 

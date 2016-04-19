@@ -81,7 +81,6 @@ size_t BPSK_rx::receive(std::vector< std::complex<float> > const &complex_signal
     static std::vector<float> filtered_signal(h_matched.size() + downsampled_signal.size() - 1);
     size_t filtered_signal_size = conv(h_matched, downsampled_signal, filtered_signal);
     int polarity, start_index = symbol_offset_synch(filtered_signal, &polarity);
-    //std::cout << "start_index: " << start_index << ", polarity: " << polarity << std::endl;
 
     for(int i = 0, n = (spb_new - 1) + start_index; n < (int) filtered_signal_size; i++, n += spb_new) {
         pulses[i] = polarity * (filtered_signal[n] > 0 ? 1 : -1);
@@ -90,44 +89,6 @@ size_t BPSK_rx::receive(std::vector< std::complex<float> > const &complex_signal
     return pulses.size();
 
 }
-
-/*
-size_t BPSK_rx::receive_from_file(std::vector< std::vector< std::complex<float> >* > buffers, std::vector<int> &pulses) {
-
-    //downsample and accumulate everything in one buffer
-    for(int i = 0; i < (int) buffers.size(); i++) {
-        for(int j = 0, n = 0; n < (int) buffers[i]->size(); j++, n += d_factor) {
-            received_signal[i * spb + j] = real(buffers[i]->at(n));
-        }
-    }
-
-    //remove the dc component
-    float mean = std::accumulate(received_signal.begin(), received_signal.end(), 0.0) / (float) received_signal.size();
-    for(int i = 0; i < (int) received_signal.size(); i++) {
-        received_signal[i] -= mean;
-    }
-
-    //go through agc
-    std::vector<float> normalized_signal = agc(received_signal);
-
-    //demodulate
-    std::vector<float> demodulated_signal = costas_loop(normalized_signal);
-
-    //downsample again
-    for(int i = 0, n = 0; n < (int) demodulated_signal.size(); i++, n += d_factor_new) {
-        downsampled_signal[i] = demodulated_signal[n];
-    }
-
-    std::vector<float> filtered_signal = conv(h_matched, downsampled_signal);
-    int polarity, start_index = symbol_offset_synch(filtered_signal, &polarity);
-
-    for(int i = 0, n = (spb_new - 1) + start_index; n < (int) filtered_signal.size(); i++, n += spb_new) {
-        pulses[i] = polarity * (filtered_signal[n] > 0 ? 1 : -1);
-    }
-
-    return pulses;
-}
-*/
 
 size_t BPSK_rx::conv(std::vector<float> const &x, std::vector<float> const &h, std::vector<float> &y) const {
     if(x.size() + h.size() - 1 > y.size()) {

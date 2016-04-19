@@ -35,11 +35,6 @@ void receive(Parameters_rx * const parameters_rx,
              USRP_rx * const usrp_rx,
              BPSK_rx * const bpsk,
              PacketDecoder * const packet_decoder);
-/*
-void receive_from_file(Parameters_rx * const parameters_rx,
-                       BPSK_rx * const bpsk_rx,
-                       PacketDecoder * const packet_decoder);
-*/
 
 int main(int argc, char** argv) {
 
@@ -74,8 +69,7 @@ int main(int argc, char** argv) {
     //maybe use enums later
     if(mode == std::string("local")) {
         std::cout << std::endl; //aesthetic purposes
-        //receive_from_file(parameters_rx, bpsk_rx, packet_decoder);
-
+        std::cout << "Receive from file mode has been disabled. Check out the previous versions to use this feature" << std::endl << std::endl;
     } else if(mode == std::string("usrp")) {
         std::cout << std::endl; //aesthetic purposes
         USRP_rx * usrp_rx = new USRP_rx(parameters_rx->get_sample_rate_tx(),
@@ -94,8 +88,6 @@ int main(int argc, char** argv) {
         std::cout << std::endl;
         std::cout << "Input validation does not work, please fix" << std::endl;
     }
-
-
 
     delete parameters_rx;
     delete bpsk_rx;
@@ -147,65 +139,6 @@ void receive(Parameters_rx * const parameters_rx,
     usrp_rx->issue_stop_streaming();
     outfile.close();
 }
-
-/*
-void receive_from_file(Parameters_rx* const parameters_rx,
-                       BPSK_rx* const bpsk_rx,
-                       PacketDecoder* packet_decoder) {
-    std::ifstream infile(input_filename, std::ifstream::binary);
-    std::ofstream outfile(output_filename, std::ofstream::binary);
-
-    if(infile.is_open() == false) {
-        std::cout << "Unable to open input file: " << input_filename << std::endl << std::endl;
-        throw std::runtime_error("Unable to open input file: " + input_filename);
-    } else if(outfile.is_open() == false) {
-        std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
-        throw std::runtime_error("Unable to open output file: " + output_filename);
-    }
-
-    std::cout << "Successfully opened input file: " << input_filename << std::endl << std::endl;
-    std::cout << "Successfully opened ouput file: " << output_filename << std::endl << std::endl;
-
-    size_t spb_tx = parameters_rx->get_spb_tx();
-    size_t packet_size = parameters_rx->get_packet_size();
-
-    //vector to store all the buffer popinters
-    std::vector< std::vector< std::complex<float> >* > buffers;
-    //you will need to create new buffer each time you receive something...
-    //...to be thread safe
-    std::vector< std::complex<float> >* buff_ptr;
-    while(true) {
-        buff_ptr = new std::vector< std::complex<float> >(spb_tx);
-        infile.read((char*) &(buff_ptr->front()), spb_tx * sizeof(std::complex<float>));
-        if(infile.eof()) break;
-        buffers.push_back(buff_ptr);
-        if(buffers.size() == 2 * packet_size * 8) {
-            std::vector<int> pulses = bpsk_rx->receive_from_file(buffers);
-            std::vector<uint8_t> bytes = packet_decoder->decode(pulses);
-            for(auto b : bytes) {
-                outfile.write((char*) &b, sizeof(char));
-            }
-            //delete all the allocated buffer pointers
-            for(int i = 0; i < (int) buffers.size(); i++) {
-                delete buffers[i];
-            }
-            buffers.clear();
-        }
-    }
-
-    //delete all the allocated buffer pointers
-    for(int i = 0; i < (int) buffers.size(); i++) {
-        delete buffers[i];
-    }
-    buffers.clear();
-
-    std::cout << "Done receiving from input file: " << input_filename << std::endl << std::endl;
-    std::cout << "Done writing to output file: " << output_filename << std::endl << std::endl;
-
-    infile.close();
-    outfile.close();
-}
-*/
 
 void print_help() {
     std::cout << "Usage: " << std::endl << std::endl;

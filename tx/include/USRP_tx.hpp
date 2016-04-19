@@ -18,7 +18,8 @@ class USRP_tx {
 
     USRP_tx(double sample_rate, double f_c, size_t spb);
     ~USRP_tx();
-    int transmit(std::vector< std::complex<float> > buff, size_t N);
+    int transmit(std::vector< std::complex<float> > &buff, size_t num_tx_samps);
+    uint8_t receive();
     void send_start_of_burst();
     void send_end_of_burst();
 
@@ -36,6 +37,10 @@ class USRP_tx {
     uhd::tx_streamer::sptr tx_stream; //streamer object
     std::vector<std::string> sensor_names; //sensor names to be used when checking for clock locking etc.
     uhd::tx_metadata_t md; //metadata for the streamer object
+
+    uint16_t uc_addr;
+    uhd::i2c_iface::sptr tx_dboard_iface;
+    uhd::i2c_iface::sptr eeprom_bus;
 
 };
 
