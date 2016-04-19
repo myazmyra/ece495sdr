@@ -17,7 +17,6 @@ void sig_int_handler(int junk) {
     stop_signal_called = true;
 }
 
-std::string mode = "";
 std::string input_filename = "";
 
 std::mutex mtx;
@@ -115,13 +114,20 @@ void receive(Parameters_tx * const parameters_tx, PacketEncoder * const packet_e
         uint8_t data = usrp_tx->receive();
         mtx.unlock();
         if(data != 0) {
+            input_filename.push_back((char) data);
             for(int i = 0; i < 7; i++) {
                 mtx.lock();
                 input_filename.push_back((char) usrp_tx->receive());
                 mtx.unlock();
             }
-            bits = read_file(packet_encoder);
-            idle = false;
+            std::cout << "Input filename received: " << input_filename << std::endl;
+            try {
+                bits = read_file(packet_encoder);
+                idle = false;
+            } catch(std::ifstream::failure e) {
+                std::cout << "Unable to open input file: " + input_filename << std::endl;
+                input_filename.clear();
+            }
         }
         boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
@@ -133,8 +139,7 @@ std::vector<uint8_t> read_file(PacketEncoder * const packet_encoder) {
     char* bytes = NULL;
 
     if(infile.is_open() == false) {
-        std::cout << "Unable to open input file: " << input_filename << std::endl << std::endl;
-        throw std::runtime_error("Unable to open input file: " + input_filename);
+        throw std::ifstream::failure("Unable to open input file: " + input_filename);
     }
 
     std::cout << "Successfully opened input file: " << input_filename << std::endl << std::endl;

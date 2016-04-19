@@ -19,8 +19,6 @@ void sig_int_handler(int junk) {
     stop_signal_called = true;
 }
 
-std::string mode = "";
-std::string input_filename = "";
 std::string output_filename = "";
 
 std::mutex mtx;
@@ -28,19 +26,12 @@ std::mutex mtx;
 /***********************************************************************
  * Function Declarations
  **********************************************************************/
-int validate_input(int argc, char** argv);
-void print_help();
-
 void receive(Parameters_rx * const parameters_rx,
              USRP_rx * const usrp_rx,
              BPSK_rx * const bpsk,
              PacketDecoder * const packet_decoder);
 
 int main(int argc, char** argv) {
-
-    if(validate_input(argc, argv) == 0) {
-        return EXIT_FAILURE;
-    }
 
     Parameters_rx * parameters_rx = new Parameters_rx();
 
@@ -66,32 +57,18 @@ int main(int argc, char** argv) {
                                                        parameters_rx->get_packet_size(),
                                                        parameters_rx->get_preamble_vector());
 
-    //maybe use enums later
-    if(mode == std::string("local")) {
-        std::cout << std::endl; //aesthetic purposes
-        std::cout << "Receive from file mode has been disabled. Check out the previous versions to use this feature" << std::endl << std::endl;
-    } else if(mode == std::string("usrp")) {
-        std::cout << std::endl; //aesthetic purposes
-        USRP_rx * usrp_rx = new USRP_rx(parameters_rx->get_sample_rate_tx(),
-                                        parameters_rx->get_spb_tx(),
-                                        parameters_rx->get_d_factor(),
-                                        parameters_rx->get_spb());
+    std::cout << std::endl; //aesthetic purposes
+    USRP_rx * usrp_rx = new USRP_rx(parameters_rx->get_sample_rate_tx(),
+                                    parameters_rx->get_spb_tx(),
+                                    parameters_rx->get_d_factor(),
+                                    parameters_rx->get_spb());
 
-        receive(parameters_rx,
-                usrp_rx,
-                bpsk_rx,
-                packet_decoder);
-
-        delete usrp_rx;
-
-    } else {
-        std::cout << std::endl;
-        std::cout << "Input validation does not work, please fix" << std::endl;
-    }
+    receive(parameters_rx, usrp_rx, bpsk_rx, packet_decoder);
 
     delete parameters_rx;
     delete bpsk_rx;
     delete packet_decoder;
+    delete usrp_rx;
 
     std::cout << "Done!" << std::endl << std::endl;
 
@@ -103,6 +80,7 @@ void receive(Parameters_rx * const parameters_rx,
              USRP_rx * const usrp_rx,
              BPSK_rx * const bpsk_rx,
              PacketDecoder * const packet_decoder) {
+
     std::ofstream outfile(output_filename, std::ofstream::binary);
     if(outfile.is_open() == false) {
       std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
@@ -138,40 +116,4 @@ void receive(Parameters_rx * const parameters_rx,
     }
     usrp_rx->issue_stop_streaming();
     outfile.close();
-}
-
-void print_help() {
-    std::cout << "Usage: " << std::endl << std::endl;
-    std::cout << "./main_rx --mode usrp [outfile_path]" << std::endl << std::endl;
-    std::cout << "  or" << std::endl << std::endl;
-    std::cout << "./main_rx --mode local [infile_path] [outfile_path]" << std::endl << std::endl;
-}
-
-int validate_input(int argc, char** argv) {
-    //input validation
-    if(argc < 4) {
-        print_help();
-        return 0;
-    } else {
-        if(std::string(argv[1]) != std::string("--mode")) {
-            print_help();
-            return 0;
-        }
-        mode = std::string(argv[2]);
-        if(mode != std::string("usrp") && mode != std::string("local")) {
-            print_help();
-            return 0;
-        }
-        if(mode == std::string("local") && argc < 5) {
-            print_help();
-            return 0;
-        }
-        if(mode == std::string("local")) {
-            input_filename = std::string(argv[3]);
-            output_filename = std::string(argv[4]);
-        } else if(mode == std::string("usrp")) {
-            output_filename = std::string(argv[3]);
-        }
-    }
-    return 1;
 }
