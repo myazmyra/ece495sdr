@@ -159,3 +159,7 @@ size_t PacketDecoder::correlate(std::vector<int> const &x, std::vector<int> cons
     }
     return x.size() + y.size() - 1;
 }
+
+bool PacketDecoder::is_streaming_ended() {
+    return streaming_ended;
+}

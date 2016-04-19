@@ -19,6 +19,7 @@ class USRP_rx {
     USRP_rx(double sample_rate_tx, size_t spb_tx, int d_factor, size_t spb);
     ~USRP_rx();
     size_t receive(std::vector< std::complex<float> > &buff_downsampled, size_t total_num_rx_samps);
+    void transmit(uint8_t byte);
     void issue_start_streaming();
     void issue_stop_streaming();
 
@@ -42,6 +43,10 @@ class USRP_rx {
     uhd::rx_metadata_t md; //metadata for the streamer object
     uhd::stream_cmd_t stream_cmd;
 
+    uint16_t uc_addr;
+    uhd::i2c_iface::sptr rx_dboard_iface;
+    uhd::i2c_iface::sptr eeprom_bus;
+    uhd::byte_vector_t i2c_buffer;
 };
 
 #endif

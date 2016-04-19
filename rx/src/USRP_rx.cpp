@@ -14,7 +14,9 @@ USRP_rx::USRP_rx(double sample_rate_tx,
                  cpufmt("fc32"),
                  otw("sc16"),
                  stream_args(cpufmt, otw),
-                 stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS) {
+                 stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS),
+                 uc_addr(0x10),
+                 i2c_buffer(1) {
 
     //create a usrp device
     std::cout << std::endl;
@@ -57,6 +59,9 @@ USRP_rx::USRP_rx(double sample_rate_tx,
     stream_cmd.stream_now = false;
     stream_cmd.time_spec = uhd::time_spec_t();
     rx_stream = usrp_rx->get_rx_stream(stream_args);
+
+    rx_dboard_iface = usrp_rx->get_rx_dboard_iface();
+	eeprom_bus = rx_dboard_iface->eeprom16();
 
 }
 
@@ -110,4 +115,9 @@ size_t USRP_rx::receive(std::vector< std::complex<float> > &buff_downsampled, si
     }
 
     return spb;
+}
+
+void USRP_rx::transmit(uint8_t byte) {
+    i2c_buffer[0] = byte;
+    eeprom_bus->write_i2c(uc_addr, i2c_buffer);
 }

@@ -19,9 +19,10 @@ void sig_int_handler(int junk) {
     stop_signal_called = true;
 }
 
-std::string output_filename = "";
+std::string receive_filename;
+std::string output_filename;
 
-std::mutex mtx;
+bool idle = false;
 
 /***********************************************************************
  * Function Declarations
@@ -30,6 +31,8 @@ void receive(Parameters_rx * const parameters_rx,
              USRP_rx * const usrp_rx,
              BPSK_rx * const bpsk,
              PacketDecoder * const packet_decoder);
+
+void transmit(USRP_rx * const usrp_rx);
 
 int main(int argc, char** argv) {
 
@@ -63,7 +66,10 @@ int main(int argc, char** argv) {
                                     parameters_rx->get_d_factor(),
                                     parameters_rx->get_spb());
 
-    receive(parameters_rx, usrp_rx, bpsk_rx, packet_decoder);
+    while(not stop_signal_called) {
+        transmit(usrp_rx);
+        receive(parameters_rx, usrp_rx, bpsk_rx, packet_decoder);
+    }
 
     delete parameters_rx;
     delete bpsk_rx;
@@ -83,8 +89,8 @@ void receive(Parameters_rx * const parameters_rx,
 
     std::ofstream outfile(output_filename, std::ofstream::binary);
     if(outfile.is_open() == false) {
-      std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
-      throw std::runtime_error("Unable to open output file: " + output_filename);
+       std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
+       throw std::runtime_error("Unable to open output file: " + output_filename);
     }
     std::cout << "Successfully opened ouput file: " << output_filename << std::endl << std::endl;
 
@@ -99,7 +105,7 @@ void receive(Parameters_rx * const parameters_rx,
     std::vector< std::complex<float> > buff(spb * 2 * packet_size * 8);
     size_t total_num_rx_samps = 0;
     usrp_rx->issue_start_streaming();
-    while(not stop_signal_called) {
+    while(not stop_signal_called && packet_decoder->is_streaming_ended() == false) {
         size_t num_rx_samps = usrp_rx->receive(buff, total_num_rx_samps);
         if(num_rx_samps != spb) {
             std::cout << "Did not receive enough samples" << std::endl << std::endl;
@@ -116,4 +122,15 @@ void receive(Parameters_rx * const parameters_rx,
     }
     usrp_rx->issue_stop_streaming();
     outfile.close();
+    output_filename.clear();
+    idle = true;
+}
+
+void transmit(USRP_rx * const usrp_rx) {
+    receive_filename = "img.jpeg";
+    output_filename = "reconstructed.txt";
+    for(int i = 0; i < 8; i++) {
+        usrp_rx->transmit((uint8_t) receive_filename[i]);
+    }
+    idle = false;
 }
