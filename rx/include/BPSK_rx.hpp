@@ -45,7 +45,7 @@ class BPSK_rx {
     //const float clock_drift_rate;
 
     //basic rx parameters
-    size_t packet_size;
+    size_t const packet_size;
     double const sample_rate;
     double const T_s;
     double const f_IF;
@@ -55,7 +55,7 @@ class BPSK_rx {
     size_t const spb_new; //spb / decimation_factor
 
     //matched filter
-    std::vector<float> h_matched;
+    std::vector<float> const h_matched;
 
     //agc parameters
     float const power_desired, mu_agc;
@@ -64,9 +64,9 @@ class BPSK_rx {
     std::vector<float> preamble_detect; //vector used in detecting start_index
 
     //costas loop filters and buffers
-    float mu_pll;
-    size_t filter_size;
-    std::vector<float> h_lp_pll, z_sin, z_cos;
+    float const mu_pll;
+    size_t const filter_size;
+    std::vector<float> const h_lp_pll;
 
 };
 
