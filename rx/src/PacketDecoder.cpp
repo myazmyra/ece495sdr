@@ -34,6 +34,9 @@ size_t PacketDecoder::decode(std::vector<int> const &pulses, size_t pulses_size,
     }
     size_t rxy_size = correlate(pulses, preamble_vector, rxy);
     int start_index = std::distance(rxy.begin(), std::max_element(rxy.begin(), rxy.begin() + rxy_size)) + 1;
+    //if(rxy[start_index - 1] != (int) preamble_size * 8) {
+    //    return 0;
+    //}
 
     start_index -=  (int) preamble_vector.size();
     start_index = start_index < 0 ? start_index + (int) preamble_vector.size() : start_index;

@@ -124,8 +124,8 @@ void receive(Parameters_rx * const parameters_rx,
 }
 
 void transmit(USRP_rx * const usrp_rx) {
-    receive_filename = "img.jpeg";
-    output_filename = "reconstructed.jpeg";
+    receive_filename = "asci.txt";
+    output_filename = "bin/reconstructed.txt";
     for(int i = 0; i < ((int) receive_filename.size() <= 8 ? (int) receive_filename.size() : 8); i++) {
         usrp_rx->transmit((uint8_t) receive_filename[i]);
     }
