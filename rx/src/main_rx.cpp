@@ -66,6 +66,7 @@ int main(int argc, char** argv) {
 
     //while(not stop_signal_called) {
     transmit(usrp_rx);
+    boost::this_thread::sleep(boost::posix_time::seconds(5));
     receive(parameters_rx, usrp_rx, bpsk_rx, packet_decoder);
     //}
 

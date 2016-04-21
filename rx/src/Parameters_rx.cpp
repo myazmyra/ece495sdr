@@ -25,10 +25,10 @@ Parameters_rx::Parameters_rx() {
 
   //agc parameters
   power_desired = 0.5;
-  mu_agc = 0.05;
+  mu_agc = 1;
 
   //costas loop parameters
-  mu_pll = 0.2;
+  mu_pll = 0.15;
   float const h_lp_pll_tmp[FILTER_SIZE] = {0.0187, 0.0106, 0.0086, 0.0035, -0.0026, -0.0069, -0.0068, -0.0011,
                                            0.0100, 0.0249, 0.0411, 0.0568, 0.0702, 0.0807, 0.0878, 0.0913,
                                            0.0913, 0.0878, 0.0807, 0.0702, 0.0568, 0.0411, 0.0249, 0.0100,
