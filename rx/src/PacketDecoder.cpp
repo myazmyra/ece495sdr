@@ -163,6 +163,19 @@ size_t PacketDecoder::correlate(std::vector<int> const &x, std::vector<int> cons
     return x.size() + y.size() - 1;
 }
 
+bool PacketDecoder::is_streaming_started() {
+    return streaming_started;
+}
+
 bool PacketDecoder::is_streaming_ended() {
     return streaming_ended;
+}
+
+void PacketDecoder::reset() {
+    previous_pulses_size = 0;
+    total_size = 0;
+    received_size = 0;
+    bytes_lost = 0;
+    streaming_started = false;
+    streaming_ended = false;
 }

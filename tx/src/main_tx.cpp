@@ -87,7 +87,9 @@ void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK
     int i = 0;
 
     //start burst
+    mtx.lock();
     usrp_tx->send_start_of_burst();
+    mtx.unlock();
     while(not stop_signal_called) {
         mtx.lock();
         if(idle == true) {
@@ -96,15 +98,20 @@ void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK
             usrp_tx->transmit(bits[i] ? positive : negative, spb);
             i++;
             if(i == (int) bits.size()) {
+                std::cout << "Done sending the file: " << input_filename << std::endl << std::endl;
                 i = 0;
                 idle = true;
+                bits.clear();
+                input_filename.clear();
             }
         }
         mtx.unlock();
     }
 
     //stop transmission
+    mtx.lock();
     usrp_tx->send_end_of_burst();
+    mtx.unlock();
 }
 
 void receive(Parameters_tx * const parameters_tx, PacketEncoder * const packet_encoder, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx) {
@@ -123,13 +130,17 @@ void receive(Parameters_tx * const parameters_tx, PacketEncoder * const packet_e
             std::cout << "Input filename received: " << input_filename << std::endl;
             try {
                 bits = read_file(packet_encoder);
-                idle = false;
             } catch(std::ifstream::failure e) {
                 std::cout << "Unable to open input file: " + input_filename << std::endl;
                 input_filename.clear();
+                bits.clear();
             }
         }
         boost::this_thread::sleep(boost::posix_time::seconds(1));
+        if(data != 0) {
+            boost::this_thread::sleep(boost::posix_time::seconds(5));
+            idle = false;
+        }
     }
 }
 

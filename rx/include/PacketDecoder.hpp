@@ -17,7 +17,9 @@ class PacketDecoder {
 
     ~PacketDecoder();
     size_t decode(std::vector<int> const &pulses, size_t pulses_size, std::vector<uint8_t> &bytes);
+    bool is_streaming_started();
     bool is_streaming_ended();
+    void reset();
 
   private:
 

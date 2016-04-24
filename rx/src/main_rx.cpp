@@ -64,11 +64,10 @@ int main(int argc, char** argv) {
                                     parameters_rx->get_d_factor(),
                                     parameters_rx->get_spb());
 
-    //while(not stop_signal_called) {
-    transmit(usrp_rx);
-    boost::this_thread::sleep(boost::posix_time::seconds(5));
-    receive(parameters_rx, usrp_rx, bpsk_rx, packet_decoder);
-    //}
+    while(not stop_signal_called) {
+        transmit(usrp_rx);
+        receive(parameters_rx, usrp_rx, bpsk_rx, packet_decoder);
+    }
 
     delete parameters_rx;
     delete bpsk_rx;
@@ -96,6 +95,7 @@ void receive(Parameters_rx * const parameters_rx,
     size_t data_size = parameters_rx->get_data_size();
     size_t packet_size = parameters_rx->get_packet_size();
     size_t spb = parameters_rx->get_spb();
+    double timeout_seconds = 10;
 
     //buffers to be used
     std::vector<int> pulses(2 * packet_size * 8);
@@ -103,6 +103,7 @@ void receive(Parameters_rx * const parameters_rx,
 
     std::vector< std::complex<float> > buff(spb * 2 * packet_size * 8);
     size_t total_num_rx_samps = 0;
+    boost::posix_time::ptime start_time = boost::posix_time::second_clock::local_time();
     usrp_rx->issue_start_streaming();
     while(not stop_signal_called && packet_decoder->is_streaming_ended() == false) {
         size_t num_rx_samps = usrp_rx->receive(buff, total_num_rx_samps);
@@ -115,6 +116,12 @@ void receive(Parameters_rx * const parameters_rx,
             total_num_rx_samps = 0;
             size_t pulses_size = bpsk_rx->receive(buff, pulses);
             size_t bytes_size = packet_decoder->decode(pulses, pulses_size, bytes);
+            boost::posix_time::ptime current_time = boost::posix_time::second_clock::local_time();
+            if(packet_decoder->is_streaming_started() == false && (current_time - start_time).total_seconds() >= timeout_seconds) {
+                std::cout << "Timeout reached waiting for the file to start streaming. Please try again." << std::endl;
+                packet_decoder->reset();
+                break;
+            }
             outfile.write((char *) &bytes.front(), bytes_size * sizeof(char));
             outfile.flush();
         }
@@ -125,8 +132,10 @@ void receive(Parameters_rx * const parameters_rx,
 }
 
 void transmit(USRP_rx * const usrp_rx) {
-    receive_filename = "asci.txt";
-    output_filename = "bin/reconstructed.txt";
+    std::cout << "Please enter the name of the file you would like to receive: " << std::endl;
+    std::cin >> receive_filename;
+    output_filename = "bin/" + receive_filename;
+    std::cout << "Your file will be saved in " + output_filename << std::endl;
     for(int i = 0; i < ((int) receive_filename.size() <= 8 ? (int) receive_filename.size() : 8); i++) {
         usrp_rx->transmit((uint8_t) receive_filename[i]);
     }
