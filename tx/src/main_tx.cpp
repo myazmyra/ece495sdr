@@ -95,6 +95,9 @@ void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK
         if(idle == true) {
             usrp_tx->transmit(positive, spb);
         } else {
+            if(i == 0) {
+                std::cout << "Starting to stream" << std::endl;
+            }
             usrp_tx->transmit(bits[i] ? positive : negative, spb);
             i++;
             if(i == (int) bits.size()) {
