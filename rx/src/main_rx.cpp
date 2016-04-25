@@ -136,6 +136,7 @@ void receive(Parameters_rx * const parameters_rx,
     output_filename.clear();
     //turn on the heartbeat
     usrp_rx->transmit(1);
+    std::cout << "Please wait for " << 10 << " seconds." << std::endl << std::endl;
     boost::this_thread::sleep(boost::posix_time::seconds(10));
 }
 

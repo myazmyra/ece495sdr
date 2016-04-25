@@ -153,13 +153,15 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
         return data_size - (received_size - total_size);
     }
     */
+    //static int old_progress = 1;
     if(streaming_started == true && total_size != 0) {
         received_size += data_size;
-        float progress = 100 * ((float) received_size / (float) total_size);
-        std::cout << "\rProgress:  %%%.2f" << progress << std::flush;
+        int progress = 100 * ((float) received_size / (float) total_size);
+        //if(progress != old_progress) std::cout << "\rProgress:  %" << progress << std::flush;
+        std::cout << "\rProgress: %" << progress << std::flush;
         if(received_size >= total_size) {
             streaming_ended = true;
-            //std::cout << std::endl << std::endl << "Total bytes lost: " << bytes_lost << std::endl << std::endl;
+            std::cout << std::endl << std::endl << "Total bytes lost: " << bytes_lost << std::endl;
             std::cout << "File streaming ended" << std::endl << std::endl;
             //std::cout << data_size - (received_size - total_size) << std::endl;
             //std::cout << total_size << std::endl;
