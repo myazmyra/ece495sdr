@@ -66,6 +66,7 @@ int main(int argc, char** argv) {
 
     while(not stop_signal_called) {
         transmit(usrp_rx);
+        boost::this_thread::sleep(boost::posix_time::seconds(5));
         receive(parameters_rx, usrp_rx, bpsk_rx, packet_decoder);
     }
 
@@ -118,7 +119,7 @@ void receive(Parameters_rx * const parameters_rx,
             size_t bytes_size = packet_decoder->decode(pulses, pulses_size, bytes);
             boost::posix_time::ptime current_time = boost::posix_time::second_clock::local_time();
             if(packet_decoder->is_streaming_started() == false && (current_time - start_time).total_seconds() >= timeout_seconds) {
-                std::cout << "Timeout reached waiting for the file to start streaming. Please try again." << std::endl;
+                std::cout << "Timeout reached waiting for the file to start streaming. Please try again." << std::endl << std::endl;
                 packet_decoder->reset();
                 break;
             }

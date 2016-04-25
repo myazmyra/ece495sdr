@@ -22,6 +22,7 @@ std::string input_filename = "";
 std::mutex mtx;
 bool idle = true;
 std::vector<uint8_t> bits;
+boost::posix_time::ptime start_time;
 
 /***********************************************************************
  * Function Declarations
@@ -94,6 +95,8 @@ void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK
         mtx.lock();
         if(idle == true) {
             usrp_tx->transmit(positive, spb);
+        } else if((boost::posix_time::second_clock::local_time() - start_time).total_seconds() > (double) 5) {
+            usrp_tx->transmit(std::rand() % 2 ? positive : negative, spb);
         } else {
             if(i == 0) {
                 std::cout << "Starting to stream" << std::endl;
@@ -133,6 +136,8 @@ void receive(Parameters_tx * const parameters_tx, PacketEncoder * const packet_e
             std::cout << "Input filename received: " << input_filename << std::endl;
             try {
                 bits = read_file(packet_encoder);
+                start_time = boost::posix_time::second_clock::local_time();
+                idle = false;
             } catch(std::ifstream::failure e) {
                 std::cout << "Unable to open input file: " + input_filename << std::endl;
                 input_filename.clear();
@@ -140,10 +145,6 @@ void receive(Parameters_tx * const parameters_tx, PacketEncoder * const packet_e
             }
         }
         boost::this_thread::sleep(boost::posix_time::seconds(1));
-        if(data != 0) {
-            boost::this_thread::sleep(boost::posix_time::seconds(5));
-            idle = false;
-        }
     }
 }
 
