@@ -119,8 +119,11 @@ void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK
 }
 
 void receive(Parameters_tx * const parameters_tx, PacketEncoder * const packet_encoder, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx) {
-    while(not stop_signal_called && idle == true) {
+    while(not stop_signal_called) {
         //receive some stuff from the microcontroller
+        if(idle == false) {
+            continue;
+        }
         bool file_opened = false;
         mtx.lock();
         uint8_t data = usrp_tx->receive();

@@ -127,6 +127,7 @@ void receive(Parameters_rx * const parameters_rx,
             outfile.flush();
         }
     }
+    packet_decoder->reset();
     usrp_rx->issue_stop_streaming();
     outfile.close();
     output_filename.clear();

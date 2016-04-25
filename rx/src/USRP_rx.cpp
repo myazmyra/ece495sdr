@@ -75,6 +75,7 @@ void USRP_rx::issue_start_streaming() {
         std::cout << "USRP_rx::issue_start_streaming(): USRP_rx is already streaming" << std::endl << std::endl;
         throw std::runtime_error("USRP_rx is already streaming");
     }
+    stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS;
     stream_cmd.stream_now = true;
     rx_stream->issue_stream_cmd(stream_cmd);
 }
