@@ -131,7 +131,7 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
         } else if(streaming_started == true && streaming_ended == false && checksum != 0) {
             //std::cout << "packet lost" << std::endl;
             bytes_lost += data_size;
-            //std::fill(bytes.begin() + bytes_size, bytes.begin() + bytes_size + data_size, 0);
+            std::fill(bytes.begin() + bytes_size, bytes.begin() + bytes_size + data_size, 0);
             //return 0;
         }
     }
@@ -155,8 +155,8 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
     */
     if(streaming_started == true && total_size != 0) {
         received_size += data_size;
-        float progress = 100 * ((float) received_size / (float) total_size);
-        printf("\rProgress:  %%%.2f", progress);
+        //float progress = 100 * ((float) received_size / (float) total_size);
+        //printf("\rProgress:  %%%.2f", progress);
         if(received_size >= total_size) {
             streaming_ended = true;
             std::cout << std::endl << std::endl << "Total bytes lost: " << bytes_lost << std::endl << std::endl;
