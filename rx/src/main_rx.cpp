@@ -88,15 +88,15 @@ void receive(Parameters_rx * const parameters_rx,
 
     std::ofstream outfile(output_filename, std::ofstream::binary);
     if(outfile.is_open() == false) {
-       std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
-       throw std::runtime_error("Unable to open output file: " + output_filename);
+        std::cout << "Unable to open output file: " << output_filename << std::endl << std::endl;
+        throw std::runtime_error("Unable to open output file: " + output_filename);
     }
     std::cout << "Successfully opened ouput file: " << output_filename << std::endl << std::endl;
 
     size_t data_size = parameters_rx->get_data_size();
     size_t packet_size = parameters_rx->get_packet_size();
     size_t spb = parameters_rx->get_spb();
-    double timeout_seconds = 10;
+    double timeout_seconds = 20;
 
     //buffers to be used
     std::vector<int> pulses(2 * packet_size * 8);
@@ -106,6 +106,7 @@ void receive(Parameters_rx * const parameters_rx,
     size_t total_num_rx_samps = 0;
     boost::posix_time::ptime start_time = boost::posix_time::second_clock::local_time();
     usrp_rx->issue_start_streaming();
+    size_t received_size = 0;
     while(not stop_signal_called && packet_decoder->is_streaming_ended() == false) {
         size_t num_rx_samps = usrp_rx->receive(buff, total_num_rx_samps);
         if(num_rx_samps != spb) {
@@ -117,6 +118,7 @@ void receive(Parameters_rx * const parameters_rx,
             total_num_rx_samps = 0;
             size_t pulses_size = bpsk_rx->receive(buff, pulses);
             size_t bytes_size = packet_decoder->decode(pulses, pulses_size, bytes);
+            received_size += bytes_size;
             boost::posix_time::ptime current_time = boost::posix_time::second_clock::local_time();
             if(packet_decoder->is_streaming_started() == false && (current_time - start_time).total_seconds() >= timeout_seconds) {
                 std::cout << "Timeout reached waiting for the file to start streaming. Please try again." << std::endl << std::endl;
@@ -127,6 +129,7 @@ void receive(Parameters_rx * const parameters_rx,
             outfile.flush();
         }
     }
+    std::cout << "rcv: " << received_size << std::endl;
     packet_decoder->reset();
     usrp_rx->issue_stop_streaming();
     outfile.close();
@@ -134,8 +137,9 @@ void receive(Parameters_rx * const parameters_rx,
 }
 
 void transmit(USRP_rx * const usrp_rx) {
-    std::cout << "Please enter the name of the file you would like to receive: " << std::endl;
+    std::cout << "Please enter the name of the file you would like to receive: ";
     std::cin >> receive_filename;
+    std::cout << std::endl;
     output_filename = "bin/" + receive_filename;
     std::cout << "Your file will be saved in " + output_filename << std::endl;
     for(int i = 0; i < ((int) receive_filename.size() <= 8 ? (int) receive_filename.size() : 8); i++) {

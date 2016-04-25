@@ -100,6 +100,20 @@ std::vector<uint8_t> PacketEncoder::form_packets(char * data, size_t file_size) 
         }
     }
 
+    //add redundant bytes to the end
+    for(int i = 0; i < 4; i++) {
+        //push the preamble vector
+        for(int j = 0; j < (int) preamble_size; j++) {
+            packets.push_back(preamble_bytes[j]);
+        }
+        for(int j = 0; j < (int) data_size; j++) {
+            packets.push_back((std::rand() % 2) * (uint8_t) (~0));
+        }
+        for(int j = 0; j < (int) checksum_size; j++) {
+            packets.push_back((std::rand() % 2) * (uint8_t) (~0));
+        }
+    }
+
     free(header);
     //transform bytes to bits and return
     return bytes_to_bits(packets);

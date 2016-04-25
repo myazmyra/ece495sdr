@@ -86,9 +86,10 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
         }
         bytes[insert_index] = byte;
     }
-    if(streaming_started) {
+    /*if(streaming_started) {
         received_size += data_size;
     }
+    */
 
     static std::vector<uint8_t> checksums(checksum_size);
     for(int i = 0; i < (int) checksum_size; i++) {
@@ -121,30 +122,49 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
                 total_size |= (((size_t) bytes[j]) << shift_size);
                 shift_size += 8;
             }
+            std::cout << "File streaming started" << std::endl;
+            std::cout << "Total file size to receive in bytes: " << total_size << std::endl << std::endl;
+            streaming_started = true;
             return 0;
         } else if(checksum == (uint8_t) (~0) && total_size != 0) {
             return 0;
         } else if(streaming_started == true && streaming_ended == false && checksum != 0) {
+            //std::cout << "packet lost" << std::endl;
             bytes_lost += data_size;
-            std::fill(bytes.begin() + bytes_size, bytes.end(), 0);
-            return data_size;
+            //std::fill(bytes.begin() + bytes_size, bytes.begin() + bytes_size + data_size, 0);
+            //return 0;
         }
     }
-    //if first packet checksums pass
-    if(streaming_started == false && total_size != 0) {
+    /*if(streaming_started == false && total_size != 0) {
         std::cout << "File streaming started" << std::endl;
         std::cout << "Total file size to receive in bytes: " << total_size << std::endl << std::endl;
         streaming_started = true;
         received_size = data_size;
     }
+    */
     //remove redundant bytes if needed
-    if(streaming_started == true && streaming_ended == false && received_size >= total_size) {
+    /*if(streaming_started == true && streaming_ended == false && received_size >= total_size) {
         streaming_ended = true;
-        std::cout << "Total bytes lost: " << bytes_lost << std::endl << std::endl;
+        std::cout << std::endl << "Total bytes lost: " << bytes_lost << std::endl << std::endl;
         std::cout << "File streaming ended" << std::endl << std::endl;
+        std::cout << data_size - (received_size - total_size) << std::endl;
+        std::cout << total_size << std::endl;
+        std::cout << received_size << std::endl;
         return data_size - (received_size - total_size);
     }
+    */
     if(streaming_started == true && total_size != 0) {
+        received_size += data_size;
+        std::cout << "Progress: %" << (int) (100 * ((float) received_size / (float) total_size)) << "\n";
+        if(received_size >= total_size) {
+            streaming_ended = true;
+            std::cout << std::endl << std::endl << "Total bytes lost: " << bytes_lost << std::endl << std::endl;
+            std::cout << "File streaming ended" << std::endl << std::endl;
+            std::cout << data_size - (received_size - total_size) << std::endl;
+            std::cout << total_size << std::endl;
+            std::cout << received_size << std::endl;
+            return data_size - (received_size - total_size);
+        }
         return data_size;
     }
     return 0;
