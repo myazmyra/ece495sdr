@@ -118,7 +118,7 @@ void receive(Parameters_rx * const parameters_rx,
             total_num_rx_samps = 0;
             size_t pulses_size = bpsk_rx->receive(buff, pulses);
             size_t bytes_size = packet_decoder->decode(pulses, pulses_size, bytes);
-            received_size += bytes_size;
+            //received_size += bytes_size;
             boost::posix_time::ptime current_time = boost::posix_time::second_clock::local_time();
             if(packet_decoder->is_streaming_started() == false && (current_time - start_time).total_seconds() >= timeout_seconds) {
                 std::cout << "Timeout reached waiting for the file to start streaming. Please try again." << std::endl << std::endl;
@@ -149,7 +149,7 @@ void transmit(USRP_rx * const usrp_rx) {
         usrp_rx->transmit((uint8_t) receive_filename[i]);
     }
     receive_filename.clear();
-    boost::this_thread::sleep(boost::posix_time::seconds(10));
+    boost::this_thread::sleep(boost::posix_time::seconds(7));
     //turn off the heartbeat
     usrp_rx->transmit(0);
 }
