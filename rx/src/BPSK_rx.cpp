@@ -80,7 +80,6 @@ size_t BPSK_rx::receive(std::vector< std::complex<float> > const &complex_signal
     static std::vector<float> filtered_signal(h_matched.size() + downsampled_signal.size() - 1);
     size_t filtered_signal_size = conv(h_matched, downsampled_signal, filtered_signal);
     int polarity, start_index = symbol_offset_synch(filtered_signal, &polarity);
-    //std::cout << "start_index: " << start_index << ", polarity: " << polarity << std::endl << std::endl;
 
     for(int i = 0, n = (spb_new - 1) + start_index; n < (int) filtered_signal_size; i++, n += spb_new) {
         pulses[i] = polarity * (filtered_signal[n] > 0 ? 1 : -1);
@@ -142,8 +141,6 @@ void BPSK_rx::agc(std::vector<float> &r) {
 
 void BPSK_rx::costas_loop(std::vector<float> &r) {
 
-    //std::cout << "filter_size: " << filter_size << std::endl;
-
     static std::vector<float> z_sin(filter_size), z_cos(filter_size);
 
     static int start_index = 0, end_index = ((int) filter_size) - 1;
@@ -172,7 +169,6 @@ void BPSK_rx::costas_loop(std::vector<float> &r) {
 
         theta -= mu_pll * lpf_sin * lpf_cos;
     }
-    //std::cout << "theta: " << theta << std::endl << std::endl;
 
 }
 

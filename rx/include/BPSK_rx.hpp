@@ -39,10 +39,6 @@ class BPSK_rx {
     void costas_loop(std::vector<float> &normalized_signal);
     int symbol_offset_synch(std::vector<float> const &filtered_signal, int* polarity) const;
 
-    //used to compute sample time recomputation period
-    //const float usrp_sample_rate;
-    //const float clock_drift_rate;
-
     //basic rx parameters
     size_t const packet_size;
     double const sample_rate;
