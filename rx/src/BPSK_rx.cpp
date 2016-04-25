@@ -52,7 +52,6 @@ BPSK_rx::~BPSK_rx() {
 
 size_t BPSK_rx::receive(std::vector< std::complex<float> > const &complex_signal, std::vector<int> &pulses) {
 
-
     //remove the DC component
     float mean = std::accumulate(complex_signal.begin(), complex_signal.end(),
                  std::complex<float>(0.0, 0.0)).real() / (float) complex_signal.size();

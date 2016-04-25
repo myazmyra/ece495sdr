@@ -96,7 +96,7 @@ void receive(Parameters_rx * const parameters_rx,
     size_t data_size = parameters_rx->get_data_size();
     size_t packet_size = parameters_rx->get_packet_size();
     size_t spb = parameters_rx->get_spb();
-    double timeout_seconds = 20;
+    double timeout_seconds = 15;
 
     //buffers to be used
     std::vector<int> pulses(2 * packet_size * 8);
@@ -106,7 +106,7 @@ void receive(Parameters_rx * const parameters_rx,
     size_t total_num_rx_samps = 0;
     boost::posix_time::ptime start_time = boost::posix_time::second_clock::local_time();
     usrp_rx->issue_start_streaming();
-    size_t received_size = 0;
+    //size_t received_size = 0;
     while(not stop_signal_called && packet_decoder->is_streaming_ended() == false) {
         size_t num_rx_samps = usrp_rx->receive(buff, total_num_rx_samps);
         if(num_rx_samps != spb) {
@@ -129,11 +129,14 @@ void receive(Parameters_rx * const parameters_rx,
             outfile.flush();
         }
     }
-    std::cout << "rcv: " << received_size << std::endl;
+    //std::cout << "rcv: " << received_size << std::endl;
     packet_decoder->reset();
     usrp_rx->issue_stop_streaming();
     outfile.close();
     output_filename.clear();
+    //turn on the heartbeat
+    usrp_rx->transmit(1);
+    boost::this_thread::sleep(boost::posix_time::seconds(10));
 }
 
 void transmit(USRP_rx * const usrp_rx) {
@@ -146,4 +149,7 @@ void transmit(USRP_rx * const usrp_rx) {
         usrp_rx->transmit((uint8_t) receive_filename[i]);
     }
     receive_filename.clear();
+    boost::this_thread::sleep(boost::posix_time::seconds(10));
+    //turn off the heartbeat
+    usrp_rx->transmit(0);
 }
