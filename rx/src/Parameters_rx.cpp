@@ -25,7 +25,7 @@ Parameters_rx::Parameters_rx() {
 
   //agc parameters
   power_desired = 0.5;
-  mu_agc = 1;
+  mu_agc = 0.05;
 
   //costas loop parameters
   mu_pll = 0.15;

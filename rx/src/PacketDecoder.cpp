@@ -111,11 +111,18 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
         }
         if(checksum == (uint8_t) (~0) && total_size == 0) {
             int shift_size = 0;
+            std::cout << "sizeof(int): " << (int) sizeof(int) << std::endl;
             //TX and RX machines should have same number of bytes per int
+            std::cout << total_size << std::endl;
             for(int j = 0; j < (int) sizeof(int); j++) {
-                total_size |= (((int) bytes[j]) << shift_size);
+                total_size |= (((size_t) bytes[j]) << shift_size);
                 shift_size += 8;
             }
+            std::cout << "sizeof(size_t): " << (int) sizeof(size_t) << std::endl;
+            for(int k = (int) sizeof(size_t) * 8 - 1; k >= 0; k--) {
+                std::cout << (int) (((total_size & (((size_t) 1) << k)) > 0) ? 1 : 0);
+            }
+            std::cout << std::endl;
             return 0;
         } else if(checksum == (uint8_t) (~0) && total_size != 0) {
             return 0;
