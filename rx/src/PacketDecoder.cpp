@@ -110,25 +110,24 @@ size_t PacketDecoder::pulses_to_bytes(std::vector<int> const &pulses, int start_
                     checksum ^= byte;
         }
         if(checksum == (uint8_t) (~0) && total_size == 0) {
+            for(int j = (int) sizeof(size_t); j < (int) data_size; j++) {
+                if(bytes[j] != 0) {
+                    return 0;
+                }
+            }
             int shift_size = 0;
-            std::cout << "sizeof(int): " << (int) sizeof(int) << std::endl;
-            //TX and RX machines should have same number of bytes per int
-            std::cout << total_size << std::endl;
+            //TX and RX machines should have same number of bytes per size_t
             for(int j = 0; j < (int) sizeof(int); j++) {
                 total_size |= (((size_t) bytes[j]) << shift_size);
                 shift_size += 8;
             }
-            std::cout << "sizeof(size_t): " << (int) sizeof(size_t) << std::endl;
-            for(int k = (int) sizeof(size_t) * 8 - 1; k >= 0; k--) {
-                std::cout << (int) (((total_size & (((size_t) 1) << k)) > 0) ? 1 : 0);
-            }
-            std::cout << std::endl;
             return 0;
         } else if(checksum == (uint8_t) (~0) && total_size != 0) {
             return 0;
         } else if(streaming_started == true && streaming_ended == false && checksum != 0) {
             bytes_lost += data_size;
-            return 0;
+            std::fill(bytes.begin() + bytes_size, bytes.end(), 0);
+            return data_size;
         }
     }
     //if first packet checksums pass

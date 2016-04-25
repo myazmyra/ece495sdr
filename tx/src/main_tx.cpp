@@ -95,8 +95,6 @@ void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK
         mtx.lock();
         if(idle == true) {
             usrp_tx->transmit(positive, spb);
-        } else if((boost::posix_time::second_clock::local_time() - start_time).total_seconds() > (double) 5) {
-            usrp_tx->transmit(std::rand() % 2 ? positive : negative, spb);
         } else {
             if(i == 0) {
                 std::cout << "Starting to stream" << std::endl;
@@ -123,6 +121,7 @@ void transmit(Parameters_tx * const parameters_tx, USRP_tx * const usrp_tx, BPSK
 void receive(Parameters_tx * const parameters_tx, PacketEncoder * const packet_encoder, USRP_tx * const usrp_tx, BPSK_tx * const bpsk_tx) {
     while(not stop_signal_called && idle == true) {
         //receive some stuff from the microcontroller
+        bool file_opened = false;
         mtx.lock();
         uint8_t data = usrp_tx->receive();
         mtx.unlock();
@@ -136,8 +135,7 @@ void receive(Parameters_tx * const parameters_tx, PacketEncoder * const packet_e
             std::cout << "Input filename received: " << input_filename << std::endl;
             try {
                 bits = read_file(packet_encoder);
-                start_time = boost::posix_time::second_clock::local_time();
-                idle = false;
+                file_opened = true;
             } catch(std::ifstream::failure e) {
                 std::cout << "Unable to open input file: " + input_filename << std::endl;
                 input_filename.clear();
@@ -145,6 +143,10 @@ void receive(Parameters_tx * const parameters_tx, PacketEncoder * const packet_e
             }
         }
         boost::this_thread::sleep(boost::posix_time::seconds(1));
+        if(file_opened) {
+            boost::this_thread::sleep(boost::posix_time::seconds(5));
+            idle = false;
+        }
     }
 }
 
